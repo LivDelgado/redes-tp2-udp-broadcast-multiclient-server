@@ -17,6 +17,60 @@ void printErrorAndExit(char *errorMessage)
     exit(1);
 }
 
+struct addrinfo *constructServerAddress(char *port)
+{
+    // Construct the server address structure
+    struct addrinfo addressCriteria;                      // Criteria for address
+    memset(&addressCriteria, 0, sizeof(addressCriteria)); // Zero out structure
+    addressCriteria.ai_family = AF_INET;                  // IPV4
+    addressCriteria.ai_flags = AI_PASSIVE;                // Accept on any address/port
+    addressCriteria.ai_socktype = SOCK_DGRAM;             // Only datagram socket
+    addressCriteria.ai_protocol = IPPROTO_UDP;            // Only UDP socket
+
+    struct addrinfo *serverAddress; // List of server addresses
+    int rtnVal = getaddrinfo(NULL, port, &addressCriteria, &serverAddress);
+    if (rtnVal != 0)
+        printErrorAndExit("getaddrinfo() failed");
+
+    return serverAddress;
+}
+
+int setupUdpSocket(struct addrinfo *serverAddress) {
+    // Create socket for incoming connections
+    int serverSocket = socket(serverAddress->ai_family, serverAddress->ai_socktype,
+                      serverAddress->ai_protocol);
+    if (serverSocket < 0)
+        printErrorAndExit("socket() failed");
+
+    // Bind to the local address
+    if (bind(serverSocket, serverAddress->ai_addr, serverAddress->ai_addrlen) < 0)
+        printErrorAndExit("bind() failed");
+
+    // Free address list allocated by getaddrinfo()
+    freeaddrinfo(serverAddress);
+
+    return serverSocket;
+}
+
+void setBroadcastOption(int serverUdpSocket, char *port, int broadcast, struct sockaddr_storage destineAddressStorage) {
+    int setBroadcast = setsockopt(serverUdpSocket, SOL_SOCKET, SO_BROADCAST, &broadcast, sizeof(broadcast));
+    if (setBroadcast < 0) {
+        printErrorAndExit("ERROR: failed to set broadcast socket option");
+    }
+
+    in_port_t serverPort = htons((in_port_t) atoi(port));
+
+    struct sockaddr_in *clientAddress = (struct sockaddr_in *) &destineAddressStorage;
+    clientAddress->sin_family = AF_INET;
+    clientAddress->sin_port = serverPort;
+
+    if (broadcast == 1) {
+        clientAddress->sin_addr.s_addr = INADDR_BROADCAST;
+    } else {
+        clientAddress->sin_addr.s_addr = INADDR_ANY;
+    }
+}
+
 int main(int argc, char *argv[])
 {
     // validate the number of arguments
@@ -38,58 +92,44 @@ int main(int argc, char *argv[])
     // to generate a random number later on
     srand(time(NULL));
 
-    // Construct the server address structure
-    struct addrinfo addrCriteria;                   // Criteria for address
-    memset(&addrCriteria, 0, sizeof(addrCriteria)); // Zero out structure
-    addrCriteria.ai_family = AF_INET;               // IPV4
-    addrCriteria.ai_flags = AI_PASSIVE;             // Accept on any address/port
-    addrCriteria.ai_socktype = SOCK_DGRAM;          // Only datagram socket
-    addrCriteria.ai_protocol = IPPROTO_UDP;         // Only UDP socket
-
-    struct addrinfo *servAddr; // List of server addresses
-    int rtnVal = getaddrinfo(NULL, port, &addrCriteria, &servAddr);
-    if (rtnVal != 0)
-        printErrorAndExit("getaddrinfo() failed");
-
-    // Create socket for incoming connections
-    int sock = socket(servAddr->ai_family, servAddr->ai_socktype,
-                      servAddr->ai_protocol);
-    if (sock < 0)
-        printErrorAndExit("socket() failed");
-
-    // Bind to the local address
-    if (bind(sock, servAddr->ai_addr, servAddr->ai_addrlen) < 0)
-        printErrorAndExit("bind() failed");
-
-    // Free address list allocated by getaddrinfo()
-    freeaddrinfo(servAddr);
-
+    struct addrinfo *serverAddress = constructServerAddress(port);
+    int serverUdpSocket = setupUdpSocket(serverAddress);
     puts("INFO: accepting client connections");
 
-    for (;;)
-    {                                     // Run forever
-        struct sockaddr_storage clntAddr; // Client address
+    while (1)
+    {
+        struct sockaddr_storage destineAddressStorage;
+        memset(&destineAddressStorage, 0, sizeof(destineAddressStorage));
         // Set Length of client address structure (in-out parameter)
-        socklen_t clntAddrLen = sizeof(clntAddr);
+        socklen_t destineAddressLength = sizeof(destineAddressStorage);
+
+        struct sockaddr *clientAddress = (struct sockaddr *)&destineAddressStorage;
+        size_t addressSize = sizeof(struct sockaddr_in);
 
         // Block until receive message from a client
         char buffer[MAXSTRINGLENGTH]; // I/O buffer
         // Size of received message
-        ssize_t numBytesRcvd = recvfrom(sock, buffer, MAXSTRINGLENGTH, 0,
-                                        (struct sockaddr *)&clntAddr, &clntAddrLen);
-        if (numBytesRcvd < 0)
+        ssize_t numberOfBytesReceived = recvfrom(serverUdpSocket, buffer, MAXSTRINGLENGTH, 0, clientAddress, &destineAddressLength);
+        if (numberOfBytesReceived < 0)
         {
             printErrorAndExit("ERROR: recvfrom failed");
         }
 
-        puts("Handling new client!");
+        puts("INFO: Handling client!");
 
         // Send received datagram back to the client
-        ssize_t numBytesSent = sendto(sock, buffer, numBytesRcvd, 0,
-                                      (struct sockaddr *)&clntAddr, sizeof(clntAddr));
+        ssize_t numBytesSent = sendto(serverUdpSocket, buffer, MAXSTRINGLENGTH, 0, clientAddress, addressSize);
+        if (numBytesSent < 0) {
+            printErrorAndExit("sendto() failed");
+        }
+
+        /*
+        setBroadcastOption(serverUdpSocket, port, 1, destineAddressStorage);
+        numBytesSent = sendto(serverUdpSocket, buffer, numBytesRcvd, 0, clientAddress, addressSize);
         if (numBytesSent < 0)
             printErrorAndExit("sendto() failed)");
         else if (numBytesSent != numBytesRcvd)
             printErrorAndExit("sendto() sent unexpected number of bytes");
+        */
     }
 }
