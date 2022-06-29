@@ -52,7 +52,7 @@ int setupUdpSocket(struct addrinfo *serverAddress) {
     return serverSocket;
 }
 
-void setBroadcastOption(int serverUdpSocket, char *port, int broadcast, struct sockaddr_storage destineAddressStorage) {
+void setBroadcastOption(int serverUdpSocket, char *port, int broadcast, struct sockaddr_storage* destineAddressStorage) {
     int setBroadcast = setsockopt(serverUdpSocket, SOL_SOCKET, SO_BROADCAST, &broadcast, sizeof(broadcast));
     if (setBroadcast < 0) {
         printErrorAndExit("ERROR: failed to set broadcast socket option");
@@ -101,35 +101,43 @@ int main(int argc, char *argv[])
         struct sockaddr_storage destineAddressStorage;
         memset(&destineAddressStorage, 0, sizeof(destineAddressStorage));
         // Set Length of client address structure (in-out parameter)
-        socklen_t destineAddressLength = sizeof(destineAddressStorage);
+        //socklen_t destineAddressLength = sizeof(destineAddressStorage);
 
-        struct sockaddr *clientAddress = (struct sockaddr *)&destineAddressStorage;
+        //struct sockaddr *clientAddress = (struct sockaddr *)&destineAddressStorage;
         size_t addressSize = sizeof(struct sockaddr_in);
 
         // Block until receive message from a client
-        char buffer[MAXSTRINGLENGTH]; // I/O buffer
+        //char buffer[MAXSTRINGLENGTH]; // I/O buffer
+
+        /*
         // Size of received message
         ssize_t numberOfBytesReceived = recvfrom(serverUdpSocket, buffer, MAXSTRINGLENGTH, 0, clientAddress, &destineAddressLength);
         if (numberOfBytesReceived < 0)
         {
             printErrorAndExit("ERROR: recvfrom failed");
         }
+        */
 
-        puts("INFO: Handling client!");
+        ssize_t numBytesSent;
 
+        /*
         // Send received datagram back to the client
         ssize_t numBytesSent = sendto(serverUdpSocket, buffer, MAXSTRINGLENGTH, 0, clientAddress, addressSize);
         if (numBytesSent < 0) {
             printErrorAndExit("sendto() failed");
         }
-
-        /*
-        setBroadcastOption(serverUdpSocket, port, 1, destineAddressStorage);
-        numBytesSent = sendto(serverUdpSocket, buffer, numBytesRcvd, 0, clientAddress, addressSize);
-        if (numBytesSent < 0)
-            printErrorAndExit("sendto() failed)");
-        else if (numBytesSent != numBytesRcvd)
-            printErrorAndExit("sendto() sent unexpected number of bytes");
         */
+
+        setBroadcastOption(serverUdpSocket, port, 1, &destineAddressStorage);
+        char *echoString = NULL; // create new message
+        size_t echoStringLen;
+
+        printf("> ");
+        getline(&echoString, &echoStringLen, stdin); // get the message from user input
+
+        numBytesSent = sendto(serverUdpSocket, echoString, echoStringLen, 0, (struct sockaddr *)&destineAddressStorage, addressSize);
+        if (numBytesSent < 0) {
+            printErrorAndExit("sendto() failed)");
+        }
     }
 }

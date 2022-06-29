@@ -62,16 +62,14 @@ int setupUdpSocket(struct addrinfo *serverAddress)
         printErrorAndExit("ERROR: udp socket() failed");
     }
 
-    /*
-    int bindedClientToPort = bind(udpSocket, , sizeof(serverAddress));
-
-    if (bindedClientToPort < 0)
-    {
-        printErrorAndExit("ERROR: Couldn't bind to the port\n");
+    int broadcast = 1;
+    int setBroadcast = setsockopt(udpSocket, SOL_SOCKET, SO_BROADCAST, &broadcast, sizeof(broadcast));
+    if (setBroadcast < 0) {
+        printErrorAndExit("ERROR: failed to set broadcast socket option");
     }
-    puts("INFO: bind to server succeeded (UDP)");
-    */
-
+    setsockopt(udpSocket, SOL_SOCKET, SO_REUSEADDR, &broadcast, sizeof(broadcast));
+    puts("INFO: client can now receive messages");
+    
     return udpSocket;
 }
 
@@ -163,13 +161,13 @@ int main(int argc, char *argv[])
 
     while (1)
     {
-        char *echoString = NULL; // create new message
-        size_t echoStringLen;
+        //char *echoString = NULL; // create new message
+        //size_t echoStringLen;
 
-        printf("> ");
-        getline(&echoString, &echoStringLen, stdin); // get the message from user input
+        //printf("> ");
+        //getline(&echoString, &echoStringLen, stdin); // get the message from user input
 
-        sendMessageOverUdp(udpSocket, serverAddress, echoString);
+        //sendMessageOverUdp(udpSocket, serverAddress, echoString);
         receiveMessageOverUdp(udpSocket);
     }
 }
