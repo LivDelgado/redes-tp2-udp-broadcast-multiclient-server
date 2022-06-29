@@ -17,157 +17,37 @@ void printErrorAndExit(char *errorMessage)
     exit(1);
 }
 
-struct addrinfo *getServerAddress(char *serverIpAddress, char *serverPort)
-{
-    //
-    // ADDRESS - Get foreign address for server:
-    //
-    struct addrinfo addressCriteria;                      // Criteria for address match
-    memset(&addressCriteria, 0, sizeof(addressCriteria)); // Zero out structure
-    addressCriteria.ai_family = AF_INET;                  // IPV4
-    addressCriteria.ai_socktype = 0;
-    addressCriteria.ai_protocol = 0;
-
-    struct addrinfo *serverAddress; // List of server addresses
-    int rtnVal = getaddrinfo(serverIpAddress, serverPort, &addressCriteria, &serverAddress);
-    if (rtnVal != 0)
-    {
-        printErrorAndExit("ERROR: getaddrinfo failed");
-    }
-
-    return serverAddress;
-}
-
-int setupTcpSocket(struct addrinfo *serverAddress)
-{
-    int tcpSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    if (tcpSocket < 0)
-    {
-        printErrorAndExit("ERROR: tcp socket() failed");
-    }
-
-    if (connect(tcpSocket, (struct sockaddr *)&serverAddress, sizeof(serverAddress)) < 0)
-    {
-        printErrorAndExit("ERROR: failed to connect to server");
-    }
-
-    return tcpSocket;
-}
-
-int setupUdpSocket(struct addrinfo *serverAddress)
-{
-    int udpSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-    if (udpSocket < 0)
-    {
-        printErrorAndExit("ERROR: udp socket() failed");
-    }
-
-    int broadcast = 1;
-    int setBroadcast = setsockopt(udpSocket, SOL_SOCKET, SO_BROADCAST, &broadcast, sizeof(broadcast));
-    if (setBroadcast < 0) {
-        printErrorAndExit("ERROR: failed to set broadcast socket option");
-    }
-    setsockopt(udpSocket, SOL_SOCKET, SO_REUSEADDR, &broadcast, sizeof(broadcast));
-    puts("INFO: client can now receive messages");
-    
-    return udpSocket;
-}
-
-void sendMessageOverTcp(int clientSocket, char *message)
-{
-    size_t messageLength = strlen(message); // get the message size
-    ssize_t numberOfBytesBeingSent = send(clientSocket, message, messageLength, 0);
-    if (numberOfBytesBeingSent < 0)
-    {
-        printErrorAndExit("ERROR: failed to send message.");
-    }
-    else if (numberOfBytesBeingSent != messageLength)
-    {
-        printErrorAndExit("ERROR: could not send the correct message to the server.");
-    }
-}
-
-void sendMessageOverUdp(int clientSocket, struct addrinfo *serverAddress, char *message)
-{
-    size_t messageLength = strlen(message); // get the message size
-    ssize_t numberOfBytesBeingSent = sendto(
-        clientSocket, message, messageLength, 0, serverAddress->ai_addr, serverAddress->ai_addrlen);
-    if (numberOfBytesBeingSent < 0)
-    {
-        printErrorAndExit("ERROR: failed to send message.");
-    }
-    else if (numberOfBytesBeingSent != messageLength)
-    {
-        printErrorAndExit("ERROR: could not send the correct message to the server.");
-    }
-}
-
-void receiveMessageOverTcp(int clientSocket)
-{
-    unsigned int totalBytesReceived = 0;
-    ssize_t numberOfBytesReceived;
-    char buffer[MAXSTRINGLENGTH] = ""; // I/O buffer
-
-    // Receive up to the buffer size bytes from the sender
-    numberOfBytesReceived = recv(clientSocket, buffer, MAXSTRINGLENGTH - 1, 0);
-
-    if (numberOfBytesReceived < 0)
-    {
-        printErrorAndExit("ERROR: failed to receive response from server.");
-    }
-    else if (numberOfBytesReceived == 0)
-    {
-        printErrorAndExit("WARNING: server closed the connection!");
-    }
-
-    totalBytesReceived += numberOfBytesReceived;
-    buffer[numberOfBytesReceived] = '\0';
-
-    printf("< %s", buffer); // prints message received from the server
-}
-
-void receiveMessageOverUdp(int clientSocket)
-{
-    //
-    // RECEIVE - get response from server
-    //
-    struct sockaddr_storage fromAddr; // Source address of server
-    // Set length of from address structure (in-out parameter)
-    socklen_t fromAddrLen = sizeof(fromAddr);
-    char buffer[MAXSTRINGLENGTH + 1]; // I/O buffer
-    ssize_t numberOfBytesReceived = recvfrom(clientSocket, buffer, MAXSTRINGLENGTH, 0, (struct sockaddr *)&fromAddr, &fromAddrLen);
-    if (numberOfBytesReceived < 0)
-    {
-        printErrorAndExit("ERROR: recvfrom() failed");
-    }
-
-    buffer[numberOfBytesReceived] = '\0';
-    printf("Received: %s\n", buffer);
-}
-
 int main(int argc, char *argv[])
 {
-    if (argc != 3)
+    /* Create a best-effort datagram socket using UDP */
+    int sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    if (sock < 0)
     {
-        printErrorAndExit("ERROR: Invalid arguments. To run the client: client <server address> <server port>");
+        printErrorAndExit("socket() failed");
     }
 
-    char *serverIpAddress = argv[1]; // first argument is server address
-    char *serverPort = argv[2];      // second argument is server port
+    /* Construct bind structure */
+    struct sockaddr_in broadcastAddr;     /* Broadcast Address */
+    memset(&broadcastAddr, 0, sizeof(broadcastAddr));  /* Zero out structure */
+    broadcastAddr.sin_family = AF_INET;                /* Internet address family */
+    broadcastAddr.sin_addr.s_addr = htonl(INADDR_ANY); /* Any incoming interface */
+    broadcastAddr.sin_port = 0;     /* Broadcast port */
 
-    struct addrinfo *serverAddress = getServerAddress(serverIpAddress, serverPort);
+    /* Bind to the broadcast port */
+    if (bind(sock, (struct sockaddr *)&broadcastAddr, sizeof(broadcastAddr)) < 0)
+        printErrorAndExit("bind() failed");
+    puts("INFO: bind complete");
 
-    int udpSocket = setupUdpSocket(serverAddress);
+    /* Receive a single datagram from the server */
+    char recvString[MAXSTRINGLENGTH + 1]; /* Buffer for received string */
+    int recvStringLen;                    /* Length of received string */
+    if ((recvStringLen = recvfrom(sock, recvString, MAXSTRINGLENGTH, 0, NULL, 0)) < 0)
+        printErrorAndExit("recvfrom() failed");
+    puts("INFO: received string");
 
-    while (1)
-    {
-        //char *echoString = NULL; // create new message
-        //size_t echoStringLen;
+    recvString[recvStringLen] = '\0';
+    printf("Received: %s\n", recvString); /* Print the received string */
 
-        //printf("> ");
-        //getline(&echoString, &echoStringLen, stdin); // get the message from user input
-
-        //sendMessageOverUdp(udpSocket, serverAddress, echoString);
-        receiveMessageOverUdp(udpSocket);
-    }
+    close(sock);
+    exit(0);
 }
