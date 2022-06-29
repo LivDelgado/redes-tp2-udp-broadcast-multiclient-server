@@ -80,6 +80,8 @@ int main(int argc, char *argv[])
             printErrorAndExit("sendto() sent a different number of bytes than expected");
         }
 
+        puts("INFO: sent message");
+
         sleep(3); /* Avoids flooding the network */
     }
     /* NOT REACHED */
