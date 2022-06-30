@@ -126,12 +126,13 @@ int main(int argc, char *argv[])
     char *serverPort = argv[2];      // second argument is server port
 
     int clientSocket = createUdpSocket();
-    bindToBroadcasterServer(clientSocket, serverPort);
+    //bindToBroadcasterServer(clientSocket, serverPort);
 
     struct addrinfo *serverAddress = getServerAddress(serverIpAddress, serverPort);
 
     while (1)
     {
+        /*
         //
         // BROADCAST
         //
@@ -140,22 +141,21 @@ int main(int argc, char *argv[])
         //
         //
         //
-
-        /*
-            //
-            // UNICAST
-            //
-            char *echoString = NULL; // create new message
-            size_t echoStringLen;
-
-            printf("> ");
-            getline(&echoString, &echoStringLen, stdin); // get the message from user input
-
-            sendMessageToServer(clientSocket, echoString, echoStringLen, serverAddress);
-            receiveMessageFromServer(clientSocket);
-            //
-            //
-            //
         */
+
+        //
+        // UNICAST
+        //
+        char *echoString = NULL; // create new message
+        size_t echoStringLen;
+
+        printf("> ");
+        getline(&echoString, &echoStringLen, stdin); // get the message from user input
+
+        sendMessageToServer(clientSocket, echoString, echoStringLen, serverAddress);
+        receiveMessageFromServer(clientSocket);
+        //
+        //
+        //
     }
 }

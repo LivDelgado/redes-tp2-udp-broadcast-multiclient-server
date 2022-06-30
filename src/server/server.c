@@ -7,15 +7,12 @@
 #include <netdb.h>
 #include <stdlib.h>
 #include <time.h>
-
-#include <stdio.h>      /* for printf() and fprintf() */
-#include <sys/socket.h> /* for socket() and bind() */
-#include <arpa/inet.h>  /* for sockaddr_in */
-#include <stdlib.h>     /* for atoi() and exit() */
-#include <string.h>     /* for memset() */
-#include <unistd.h>     /* for close() */
+#include <unistd.h>    /* for close() */
+#include <arpa/inet.h> /* for sockaddr_in */
+#include <pthread.h>
 
 #define MAXSTRINGLENGTH 255
+#define MAXTHREADS 15
 
 // prints the message sent in the parameter and exit with error status
 void printErrorAndExit(char *errorMessage)
@@ -94,10 +91,10 @@ void sendMessageTo(struct sockaddr_in serverAddress, int serverSocket, char *mes
     }
 }
 
-void receiveMessageAndRespond(int serverSocket)
+void receiveMessageAndRespond(int serverSocket, struct sockaddr_in clntAddr)
 {
     puts("receiving messages!");
-    struct sockaddr_storage clntAddr; // Client address
+    // struct sockaddr_storage clntAddr; // Client address
 
     // Block until receive message from a client
     char buffer[MAXSTRINGLENGTH]; // I/O buffer
@@ -117,6 +114,23 @@ void receiveMessageAndRespond(int serverSocket)
     if (numBytesSent < 0)
     {
         printErrorAndExit("sendto() failed");
+    }
+}
+
+struct ThreadArgs
+{
+    int serverSocket;
+    struct sockaddr_in clientAddrIn;
+    socklen_t clientAddrLen;
+    char buffer[MAXSTRINGLENGTH];
+};
+
+void *ThreadMain(void *args)
+{
+    struct ThreadArgs *threadArgs = (struct ThreadArgs *)args;
+    while (1)
+    {
+        receiveMessageAndRespond(threadArgs->serverSocket, threadArgs->clientAddrIn);
     }
 }
 
@@ -142,18 +156,54 @@ int main(int argc, char *argv[])
     int serverSocket = createUdpSocket();
     setSocketPermissionToBroadcast(serverSocket);
 
-    char *sendString = "teste";
+    //
+    // THREADS
+    //
+    pthread_t threads[MAXTHREADS];
+    int numberOfThreads = 0;
 
+    createAddress(serverSocket, port);
+    while (1)
+    {
+        // Create separate memory for client argument
+        struct ThreadArgs *threadArgs = (struct ThreadArgs *)malloc(sizeof(struct ThreadArgs));
+        threadArgs->serverSocket = serverSocket;
+        threadArgs->clientAddrLen = sizeof(struct sockaddr_in);
+
+        puts("INFO: waiting for the first contact from the client");
+
+        int numBytesRcvd = recvfrom(
+            serverSocket, threadArgs->buffer, MAXSTRINGLENGTH, 0, (struct sockaddr *)&threadArgs->clientAddrIn, &threadArgs->clientAddrLen);
+        if (numBytesRcvd < 0)
+        {
+            printErrorAndExit("ERROR: recvfrom failed");
+        }
+
+        int threadStatus = pthread_create(&threads[numberOfThreads], NULL, ThreadMain, (void *)threadArgs);
+        if (threadStatus != 0)
+        {
+            printErrorAndExit("ERROR: failed to create thread");
+        }
+        else
+        {
+            numberOfThreads++;
+        }
+    }
+
+    /*
     //
     // BROADCAST
     //
+    char *sendString = "teste";
     struct sockaddr_in serverAddress = createBroadcastAddress(port);
     while (1) {
         sendMessageTo(serverAddress, serverSocket, sendString);
     }
     //
     //
+    */
 
+    /*
     //
     // UNICAST
     //
@@ -165,4 +215,5 @@ int main(int argc, char *argv[])
     //
     //
     //
+    */
 }
