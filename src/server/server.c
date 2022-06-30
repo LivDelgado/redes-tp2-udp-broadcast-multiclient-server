@@ -27,13 +27,13 @@ void printErrorAndExit(char *errorMessage)
 int createUdpSocket()
 {
     /* Create socket for sending/receiving datagrams */
-    int serverSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-    if (serverSocket < 0)
+    int sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    if (sock < 0)
     {
         printErrorAndExit("socket() failed");
     }
 
-    return serverSocket;
+    return sock;
 }
 
 void setSocketPermissionToBroadcast(int serverSocket)

@@ -17,16 +17,8 @@ void printErrorAndExit(char *errorMessage)
     exit(1);
 }
 
-int main(int argc, char *argv[])
+int createUdpSocket()
 {
-    if (argc != 3)
-    {
-        printErrorAndExit("ERROR: Invalid arguments. To run the client: client <server address> <server port>");
-    }
-
-    char *serverPort = argv[2];      // second argument is server port
-
-
     /* Create a best-effort datagram socket using UDP */
     int sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     if (sock < 0)
@@ -34,40 +26,63 @@ int main(int argc, char *argv[])
         printErrorAndExit("socket() failed");
     }
 
+    return sock;
+}
+
+void bindToBroadcasterServer(int clientSocket, char *serverPort)
+{
     /* Construct bind structure */
     struct sockaddr_in broadcastAddr;                 /* Broadcast Address */
     memset(&broadcastAddr, 0, sizeof(broadcastAddr)); /* Zero out structure */
     broadcastAddr.sin_family = AF_INET;               /* Internet address family */
     broadcastAddr.sin_addr.s_addr = INADDR_ANY;       /* Any incoming interface */
-    broadcastAddr.sin_port = htons(atoi(serverPort));            /* Broadcast port */
+    broadcastAddr.sin_port = htons(atoi(serverPort)); /* Broadcast port */
 
     int broadcast = 1;
-    int setBroadcast = setsockopt(sock, SOL_SOCKET, SO_BROADCAST, &broadcast, sizeof(broadcast));
-    if (setBroadcast < 0) {
+    int setBroadcast = setsockopt(clientSocket, SOL_SOCKET, SO_BROADCAST, &broadcast, sizeof(broadcast));
+    if (setBroadcast < 0)
+    {
         printErrorAndExit("ERROR: failed to set broadcast socket option");
     }
-    setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &broadcast, sizeof(broadcast));
+    setsockopt(clientSocket, SOL_SOCKET, SO_REUSEADDR, &broadcast, sizeof(broadcast));
 
     /* Bind to the broadcast port */
-    if (bind(sock, (struct sockaddr *)&broadcastAddr, sizeof(broadcastAddr)) < 0)
+    if (bind(clientSocket, (struct sockaddr *)&broadcastAddr, sizeof(broadcastAddr)) < 0)
     {
         printErrorAndExit("bind() failed");
     }
-    puts("INFO: bind complete");
+}
 
+void receiveBroadcastMessage(int clientSocket)
+{
     /* Receive a single datagram from the server */
+    char recvString[MAXSTRINGLENGTH + 1]; /* Buffer for received string */
+    int recvStringLen = recvfrom(clientSocket, recvString, MAXSTRINGLENGTH, 0, NULL, 0);
+    if (recvStringLen < 0)
+    {
+        printErrorAndExit("recvfrom() failed");
+    }
+    puts("INFO: received string");
+
+    recvString[recvStringLen] = '\0';
+    printf("Received: %s\n", recvString); /* Print the received string */
+}
+
+int main(int argc, char *argv[])
+{
+    if (argc != 3)
+    {
+        printErrorAndExit("ERROR: Invalid arguments. To run the client: client <server address> <server port>");
+    }
+
+    char *serverPort = argv[2]; // second argument is server port
+
+    int clientSocket = createUdpSocket();
+    bindToBroadcasterServer(clientSocket, serverPort);
+
     while (1)
     {
         puts("INFO: receiving message");
-        char recvString[MAXSTRINGLENGTH + 1]; /* Buffer for received string */
-        int recvStringLen = recvfrom(sock, recvString, MAXSTRINGLENGTH, 0, NULL, 0);
-        if (recvStringLen < 0)
-        {
-            printErrorAndExit("recvfrom() failed");
-        }
-        puts("INFO: received string");
-
-        recvString[recvStringLen] = '\0';
-        printf("Received: %s\n", recvString); /* Print the received string */
+        receiveBroadcastMessage(clientSocket);
     }
 }
