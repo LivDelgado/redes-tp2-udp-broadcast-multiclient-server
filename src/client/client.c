@@ -86,11 +86,10 @@ struct addrinfo *getServerAddress(char *serverIpAddress, char *serverPort)
     return servAddr;
 }
 
-void sendMessageToServer(int clientSocket, char *message)
+void sendMessageToServer(int clientSocket, char *message, struct addrinfo *servAddr)
 {
     size_t messageLen = strlen(message);
-    // ssize_t numBytes = sendto(clientSocket, message, messageLen, 0, servAddr->ai_addr, servAddr->ai_addrlen);
-    ssize_t numBytes = send(clientSocket, message, messageLen, 0);
+    ssize_t numBytes = sendto(clientSocket, message, messageLen, 0, servAddr->ai_addr, servAddr->ai_addrlen);
     if (numBytes < 0)
     {
         printErrorAndExit("ERROR: failed to send to the server");
@@ -118,18 +117,6 @@ void receiveMessageFromServer(int clientSocket)
     printf("INFO: received: %s\n", buffer);
 }
 
-void connectToServer(struct addrinfo *servAddr, int clientSocket)
-{
-    struct sockaddr *connectionAddr = (struct sockaddr *)servAddr;
-    int connectionLen = sizeof(connectionAddr);
-    if (connect(clientSocket, connectionAddr, connectionLen) < 0)
-    {
-        printErrorAndExit("ERROR: failed to connect with the server");
-    }
-
-    puts("INFO: connected to server");
-}
-
 int main(int argc, char *argv[])
 {
     if (argc != 3)
@@ -145,10 +132,7 @@ int main(int argc, char *argv[])
     // bindToBroadcasterServer(clientSocket, serverPort);
 
     struct addrinfo *serverAddress = getServerAddress(serverIpAddress, serverPort);
-    connectToServer(serverAddress, clientSocket);
 
-    char *startingMessage = "connect";
-    sendMessageToServer(clientSocket, startingMessage);
     while (1)
     {
         /*
@@ -170,7 +154,7 @@ int main(int argc, char *argv[])
 
         printf("> ");
         getline(&echoString, &echoStringLen, stdin); // get the message from user input
-        sendMessageToServer(clientSocket, echoString);
+        sendMessageToServer(clientSocket, echoString, serverAddress);
         receiveMessageFromServer(clientSocket);
         //
         //

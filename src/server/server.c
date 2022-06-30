@@ -14,13 +14,59 @@
 #define MAXSTRINGLENGTH 255
 #define MAXTHREADS 15
 
-int numberOfThreads = 0;
-
 // prints the message sent in the parameter and exit with error status
 void printErrorAndExit(char *errorMessage)
 {
     puts(errorMessage);
     exit(1);
+}
+
+int numberOfThreads = 0;
+
+struct ThreadArgs
+{
+    int serverSocket;
+    struct sockaddr_in clientAddrIn;
+    socklen_t clientAddrLen;
+    char buffer[MAXSTRINGLENGTH];
+};
+
+void receiveMessage(int serverSocket, struct ThreadArgs *threadArgs)
+{
+    int numBytesRcvd = recvfrom(
+        serverSocket, threadArgs->buffer, MAXSTRINGLENGTH, 0, (struct sockaddr *)&threadArgs->clientAddrIn, &threadArgs->clientAddrLen);
+    if (numBytesRcvd < 0)
+    {
+        printErrorAndExit("ERROR: recvfrom failed");
+    }
+    puts("INFO: client sent the first message. Creating new channel to communicate!");
+}
+
+void sendMessage(char *response, int serverSocket, struct ThreadArgs *threadArgs)
+{
+    // Send received datagram back to the client
+    ssize_t numBytesSent = sendto(threadArgs->serverSocket, response, MAXSTRINGLENGTH, 0,
+                                  (struct sockaddr *)&threadArgs->clientAddrIn, threadArgs->clientAddrLen);
+    if (numBytesSent < 0)
+    {
+        printErrorAndExit("sendto() failed");
+    }
+}
+
+void *ThreadMain(void *args)
+{
+    struct ThreadArgs *threadArgs = (struct ThreadArgs *)args;
+
+    int connection_id = threadArgs->clientAddrIn.sin_port;
+    struct sockaddr_in from = threadArgs->clientAddrIn;
+    char *ip = inet_ntoa(from.sin_addr);
+    printf("INFO: created new thread to handle client request %s:%d.\n", ip, connection_id);
+
+    sendMessage(threadArgs->buffer, threadArgs->serverSocket, threadArgs);
+
+    free(threadArgs);
+    numberOfThreads--;
+    return NULL;
 }
 
 int createUdpSocket()
@@ -120,28 +166,17 @@ void receiveMessageAndRespond(int serverSocket, struct sockaddr_in clntAddr)
     }
 }
 
-struct ThreadArgs
+void createThreadToHandleReceivedMessage(pthread_t *threads, struct ThreadArgs *threadArgs)
 {
-    int serverSocket;
-    struct sockaddr_in clientAddrIn;
-    socklen_t clientAddrLen;
-    char buffer[MAXSTRINGLENGTH];
-};
-
-void *ThreadMain(void *args)
-{
-    struct ThreadArgs *threadArgs = (struct ThreadArgs *)args;
-
-    int connection_id = threadArgs->clientAddrIn.sin_port;
-    struct sockaddr_in from = threadArgs->clientAddrIn;
-    char *ip = inet_ntoa(from.sin_addr);
-    printf("INFO: created new thread to handle client %s:%d.\n", ip, connection_id);
-
-    receiveMessageAndRespond(threadArgs->serverSocket, threadArgs->clientAddrIn);
-
-    free(threadArgs);
-    numberOfThreads--;
-    return NULL;
+    int threadStatus = pthread_create(&threads[numberOfThreads], NULL, ThreadMain, (void *)threadArgs);
+    if (threadStatus != 0)
+    {
+        printErrorAndExit("ERROR: failed to create thread");
+    }
+    else
+    {
+        numberOfThreads++;
+    }
 }
 
 int main(int argc, char *argv[])
@@ -181,23 +216,8 @@ int main(int argc, char *argv[])
 
         puts("INFO: waiting for the first contact from the client");
 
-        int numBytesRcvd = recvfrom(
-            serverSocket, threadArgs->buffer, MAXSTRINGLENGTH, 0, (struct sockaddr *)&threadArgs->clientAddrIn, &threadArgs->clientAddrLen);
-        if (numBytesRcvd < 0)
-        {
-            printErrorAndExit("ERROR: recvfrom failed");
-        }
-        puts("INFO: client sent the first message. Creating new channel to communicate!");
-
-        int threadStatus = pthread_create(&threads[numberOfThreads], NULL, ThreadMain, (void *)threadArgs);
-        if (threadStatus != 0)
-        {
-            printErrorAndExit("ERROR: failed to create thread");
-        }
-        else
-        {
-            numberOfThreads++;
-        }
+        receiveMessage(serverSocket, threadArgs);
+        createThreadToHandleReceivedMessage(threads, threadArgs);
     }
 
     /*
