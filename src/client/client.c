@@ -68,6 +68,62 @@ void receiveBroadcastMessage(int clientSocket)
     printf("Received: %s\n", recvString); /* Print the received string */
 }
 
+struct addrinfo getServerAddress(char *serverIpAddress, char *serverPort)
+{
+    //
+    // ADDRESS - Get foreign address for server:
+    //
+    struct addrinfo addrCriteria;                   // Criteria for address match
+    memset(&addrCriteria, 0, sizeof(addrCriteria)); // Zero out structure
+    addrCriteria.ai_family = AF_INET;               // IPV4
+    addrCriteria.ai_socktype = SOCK_DGRAM;          // Only datagram sockets
+    addrCriteria.ai_protocol = IPPROTO_UDP;
+
+    struct addrinfo *servAddr; // List of server addresses
+    int rtnVal = getaddrinfo(serverIpAddress, serverPort, &addrCriteria, &servAddr);
+    if (rtnVal != 0)
+    {
+        printErrorAndExit("ERROR: getaddrinfo failed");
+    }
+
+    return addrCriteria;
+}
+
+void sendMessageToServer(int clientSocket, char *message, size_t messageLen, struct addrinfo servAddr)
+{
+    //
+    // SEND - send the string to the server
+    //
+    ssize_t numBytes = sendto(clientSocket, message, messageLen, 0, servAddr.ai_addr, servAddr.ai_addrlen);
+    if (numBytes < 0)
+    {
+        printErrorAndExit("ERROR: failed to send to the server");
+    }
+    else if (numBytes != messageLen)
+    {
+        printErrorAndExit("ERROR: sent unexpected number of bytes");
+    }
+}
+
+void receiveMessageFromServer(int clientSocket)
+{
+    //
+    // RECEIVE - get response from server
+    //
+    struct sockaddr_storage fromAddr; // Source address of server
+    // Set length of from address structure (in-out parameter)
+    socklen_t fromAddrLen = sizeof(fromAddr);
+    char buffer[MAXSTRINGLENGTH + 1]; // I/O buffer
+    ssize_t numBytes = recvfrom(clientSocket, buffer, MAXSTRINGLENGTH, 0, (struct sockaddr *)&fromAddr, &fromAddrLen);
+    if (numBytes < 0)
+    {
+        printErrorAndExit("ERROR: recvfrom() failed");
+    }
+
+    buffer[MAXSTRINGLENGTH] = '\0';
+    printf("Received: %s\n", buffer);
+}
+
 int main(int argc, char *argv[])
 {
     if (argc != 3)
@@ -75,14 +131,29 @@ int main(int argc, char *argv[])
         printErrorAndExit("ERROR: Invalid arguments. To run the client: client <server address> <server port>");
     }
 
-    char *serverPort = argv[2]; // second argument is server port
+    char *serverIpAddress = argv[1]; // first argument is server address
+    char *serverPort = argv[2];      // second argument is server port
 
     int clientSocket = createUdpSocket();
-    bindToBroadcasterServer(clientSocket, serverPort);
+    // bindToBroadcasterServer(clientSocket, serverPort);
+
+    struct addrinfo serverAddress = getServerAddress(serverIpAddress, serverPort);
 
     while (1)
     {
-        puts("INFO: receiving message");
-        receiveBroadcastMessage(clientSocket);
+        // puts("INFO: receiving message");
+        // receiveBroadcastMessage(clientSocket);
+
+        //
+        // testing usual communication
+        //
+        char *echoString = NULL; // create new message
+        size_t echoStringLen;
+
+        printf("> ");
+        getline(&echoString, &echoStringLen, stdin); // get the message from user input
+
+        sendMessageToServer(clientSocket, echoString, echoStringLen, serverAddress);
+        receiveMessageFromServer(clientSocket);
     }
 }

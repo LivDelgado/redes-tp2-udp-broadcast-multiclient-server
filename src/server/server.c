@@ -47,7 +47,7 @@ void setSocketPermissionToBroadcast(int serverSocket)
     }
 }
 
-struct sockaddr_in createServerAddress(int broadcast, char *port)
+struct sockaddr_in createBroadcastAddress(char *port)
 {
     in_port_t serverPort = htons((in_port_t)atoi(port));
 
@@ -56,17 +56,41 @@ struct sockaddr_in createServerAddress(int broadcast, char *port)
     memset(&broadcastAddr, 0, sizeof(broadcastAddr)); /* Zero out structure */
     broadcastAddr.sin_family = AF_INET;               /* Internet address family */
     broadcastAddr.sin_port = serverPort;              /* Broadcast port */
+    broadcastAddr.sin_addr.s_addr = INADDR_BROADCAST;
 
+    return broadcastAddr;
+}
+
+struct sockaddr_in createAddress(int serverSocket, char *port)
+{
+    in_port_t serverPort = htons((in_port_t)atoi(port));
+
+    /* Construct local address structure */
+    struct sockaddr_in servAddr;
+    memset(&servAddr, 0, sizeof(servAddr)); /* Zero out structure */
+    servAddr.sin_family = AF_INET;          /* Internet address family */
+    servAddr.sin_addr.s_addr = INADDR_ANY;
+    servAddr.sin_port = serverPort;
+
+    // Bind to the local address
+    if (bind(serverSocket, (struct sockaddr *)&servAddr, sizeof(servAddr) < 0))
+    {
+        printErrorAndExit("bind() failed");
+    }
+
+    return servAddr;
+}
+
+struct sockaddr_in createServerAddress(int serverSocket, char *port, int broadcast)
+{
     if (broadcast == 1)
     {
-        broadcastAddr.sin_addr.s_addr = INADDR_BROADCAST;
+        return createBroadcastAddress(port);
     }
     else
     {
-        broadcastAddr.sin_addr.s_addr = INADDR_ANY;
+        return createAddress(serverSocket, port);
     }
-
-    return broadcastAddr;
 }
 
 void sendMessageTo(struct sockaddr_in serverAddress, int serverSocket, char *message)
@@ -79,10 +103,38 @@ void sendMessageTo(struct sockaddr_in serverAddress, int serverSocket, char *mes
     }
 }
 
-void sendMessage(int serverSocket, char *port, char *message, int broadcast)
+void receiveMessage(int serverSocket, char *buffer, struct sockaddr_storage clntAddr)
 {
-    struct sockaddr_in serverAddress = createServerAddress(broadcast, port);
-    sendMessageTo(serverAddress, serverSocket, message);
+    socklen_t clntAddrLen = sizeof(clntAddr);
+    // Size of received message
+    ssize_t numBytesRcvd = recvfrom(serverSocket, buffer, MAXSTRINGLENGTH, 0,
+                                    (struct sockaddr *)&clntAddr, &clntAddrLen);
+    if (numBytesRcvd < 0)
+    {
+        printErrorAndExit("ERROR: recvfrom failed");
+    }
+}
+
+void sendMessageToClient(int serverSocket, char *message, struct sockaddr_storage clntAddr)
+{
+    // Send received datagram back to the client
+    ssize_t numBytesSent = sendto(serverSocket, message, MAXSTRINGLENGTH, 0,
+                                  (struct sockaddr *)&clntAddr, sizeof(clntAddr));
+    if (numBytesSent < 0)
+    {
+        printErrorAndExit("sendto() failed)");
+    }
+}
+
+void receiveMessageAndRespond(int serverSocket)
+{
+    struct sockaddr_storage clntAddr; // Client address
+
+    // Block until receive message from a client
+    char buffer[MAXSTRINGLENGTH]; // I/O buffer
+
+    receiveMessage(serverSocket, buffer, clntAddr);
+    sendMessageToClient(serverSocket, buffer, clntAddr);
 }
 
 int main(int argc, char *argv[])
@@ -107,7 +159,19 @@ int main(int argc, char *argv[])
     int serverSocket = createUdpSocket();
     setSocketPermissionToBroadcast(serverSocket);
 
-    char *sendString = "teste";
+    // char *sendString = "teste";
 
-    sendMessage(serverSocket, port, sendString, 1);
+    //
+    // BROADCAST
+    //
+    // struct sockaddr_in serverAddress = createServerAddress(serverSocket, port, 1);
+    // sendMessageTo(serverSocket, port, sendString);
+    //
+    //
+
+    while (1)
+    {
+        createServerAddress(serverSocket, port, 0);
+        receiveMessageAndRespond(serverSocket);
+    }
 }
