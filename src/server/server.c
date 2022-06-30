@@ -61,36 +61,27 @@ struct sockaddr_in createBroadcastAddress(char *port)
     return broadcastAddr;
 }
 
-struct sockaddr_in createAddress(int serverSocket, char *port)
+void createAddress(int serverSocket, char *port)
 {
-    in_port_t serverPort = htons((in_port_t)atoi(port));
+    // Construct the server address structure
+    struct addrinfo addrCriteria;                   // Criteria for address
+    memset(&addrCriteria, 0, sizeof(addrCriteria)); // Zero out structure
+    addrCriteria.ai_family = AF_INET;               // IPV4
+    addrCriteria.ai_flags = AI_PASSIVE;             // Accept on any address/port
+    addrCriteria.ai_socktype = SOCK_DGRAM;          // Only datagram socket
+    addrCriteria.ai_protocol = IPPROTO_UDP;         // Only UDP socket
 
-    /* Construct local address structure */
-    struct sockaddr_in servAddr;
-    memset(&servAddr, 0, sizeof(servAddr)); /* Zero out structure */
-    servAddr.sin_family = AF_INET;          /* Internet address family */
-    servAddr.sin_addr.s_addr = INADDR_ANY;
-    servAddr.sin_port = serverPort;
+    struct addrinfo *servAddr; // List of server addresses
+    int rtnVal = getaddrinfo(NULL, port, &addrCriteria, &servAddr);
+    if (rtnVal != 0)
+        printErrorAndExit("getaddrinfo() failed");
 
     // Bind to the local address
-    if (bind(serverSocket, (struct sockaddr *)&servAddr, sizeof(servAddr) < 0))
-    {
+    if (bind(serverSocket, servAddr->ai_addr, servAddr->ai_addrlen) < 0)
         printErrorAndExit("bind() failed");
-    }
 
-    return servAddr;
-}
-
-struct sockaddr_in createServerAddress(int serverSocket, char *port, int broadcast)
-{
-    if (broadcast == 1)
-    {
-        return createBroadcastAddress(port);
-    }
-    else
-    {
-        return createAddress(serverSocket, port);
-    }
+    // Free address list allocated by getaddrinfo()
+    freeaddrinfo(servAddr);
 }
 
 void sendMessageTo(struct sockaddr_in serverAddress, int serverSocket, char *message)
@@ -103,9 +94,15 @@ void sendMessageTo(struct sockaddr_in serverAddress, int serverSocket, char *mes
     }
 }
 
-void receiveMessage(int serverSocket, char *buffer, struct sockaddr_storage clntAddr)
+void receiveMessageAndRespond(int serverSocket)
 {
-    socklen_t clntAddrLen = sizeof(clntAddr);
+    puts("receiving messages!");
+    struct sockaddr_storage clntAddr; // Client address
+
+    // Block until receive message from a client
+    char buffer[MAXSTRINGLENGTH]; // I/O buffer
+
+    socklen_t clntAddrLen = sizeof(&clntAddr);
     // Size of received message
     ssize_t numBytesRcvd = recvfrom(serverSocket, buffer, MAXSTRINGLENGTH, 0,
                                     (struct sockaddr *)&clntAddr, &clntAddrLen);
@@ -113,28 +110,14 @@ void receiveMessage(int serverSocket, char *buffer, struct sockaddr_storage clnt
     {
         printErrorAndExit("ERROR: recvfrom failed");
     }
-}
 
-void sendMessageToClient(int serverSocket, char *message, struct sockaddr_storage clntAddr)
-{
     // Send received datagram back to the client
-    ssize_t numBytesSent = sendto(serverSocket, message, MAXSTRINGLENGTH, 0,
+    ssize_t numBytesSent = sendto(serverSocket, buffer, MAXSTRINGLENGTH, 0,
                                   (struct sockaddr *)&clntAddr, sizeof(clntAddr));
     if (numBytesSent < 0)
     {
-        printErrorAndExit("sendto() failed)");
+        printErrorAndExit("sendto() failed");
     }
-}
-
-void receiveMessageAndRespond(int serverSocket)
-{
-    struct sockaddr_storage clntAddr; // Client address
-
-    // Block until receive message from a client
-    char buffer[MAXSTRINGLENGTH]; // I/O buffer
-
-    receiveMessage(serverSocket, buffer, clntAddr);
-    sendMessageToClient(serverSocket, buffer, clntAddr);
 }
 
 int main(int argc, char *argv[])
@@ -164,14 +147,20 @@ int main(int argc, char *argv[])
     //
     // BROADCAST
     //
-    // struct sockaddr_in serverAddress = createServerAddress(serverSocket, port, 1);
+    // struct sockaddr_in serverAddress = createBroadcastAddress(port);
     // sendMessageTo(serverSocket, port, sendString);
     //
     //
 
+    //
+    // UNICAST
+    //
+    createAddress(serverSocket, port);
     while (1)
     {
-        createServerAddress(serverSocket, port, 0);
         receiveMessageAndRespond(serverSocket);
     }
+    //
+    //
+    //
 }

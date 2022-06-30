@@ -68,7 +68,7 @@ void receiveBroadcastMessage(int clientSocket)
     printf("Received: %s\n", recvString); /* Print the received string */
 }
 
-struct addrinfo getServerAddress(char *serverIpAddress, char *serverPort)
+struct addrinfo* getServerAddress(char *serverIpAddress, char *serverPort)
 {
     //
     // ADDRESS - Get foreign address for server:
@@ -86,15 +86,12 @@ struct addrinfo getServerAddress(char *serverIpAddress, char *serverPort)
         printErrorAndExit("ERROR: getaddrinfo failed");
     }
 
-    return addrCriteria;
+    return servAddr;
 }
 
-void sendMessageToServer(int clientSocket, char *message, size_t messageLen, struct addrinfo servAddr)
+void sendMessageToServer(int clientSocket, char *message, size_t messageLen, struct addrinfo *servAddr)
 {
-    //
-    // SEND - send the string to the server
-    //
-    ssize_t numBytes = sendto(clientSocket, message, messageLen, 0, servAddr.ai_addr, servAddr.ai_addrlen);
+    ssize_t numBytes = sendto(clientSocket, message, messageLen, 0, servAddr->ai_addr, servAddr->ai_addrlen);
     if (numBytes < 0)
     {
         printErrorAndExit("ERROR: failed to send to the server");
@@ -107,9 +104,6 @@ void sendMessageToServer(int clientSocket, char *message, size_t messageLen, str
 
 void receiveMessageFromServer(int clientSocket)
 {
-    //
-    // RECEIVE - get response from server
-    //
     struct sockaddr_storage fromAddr; // Source address of server
     // Set length of from address structure (in-out parameter)
     socklen_t fromAddrLen = sizeof(fromAddr);
@@ -137,7 +131,7 @@ int main(int argc, char *argv[])
     int clientSocket = createUdpSocket();
     // bindToBroadcasterServer(clientSocket, serverPort);
 
-    struct addrinfo serverAddress = getServerAddress(serverIpAddress, serverPort);
+    struct addrinfo* serverAddress = getServerAddress(serverIpAddress, serverPort);
 
     while (1)
     {
