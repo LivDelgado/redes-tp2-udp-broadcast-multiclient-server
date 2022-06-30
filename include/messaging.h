@@ -2,9 +2,10 @@
 #define MESSAGING
 
 #include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #define EXISTING_MESSAGES 8
-
 
 struct MessageFields
 {

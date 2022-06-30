@@ -1,64 +1,40 @@
 #include "messaging.h"
 #include "utils.h"
 
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 static const char *SPLITTER = " ";
 
-struct MessageFields *initializeMessageFields()
-{
-    struct MessageFields *messageFields = (struct MessageFields *)malloc(sizeof(struct MessageFields) * EXISTING_MESSAGES);
-
-    struct MessageFields REQ_ADD, REQ_REM, RES_ADD, RES_LIST, REQ_INF, RES_INF, ERROR, OK;
-
-    REQ_ADD.hasSourceId = 0;
-    REQ_ADD.hasDestineId = 0;
-    REQ_ADD.hasPayload = 0;
-
-    REQ_REM.hasSourceId = 1;
-    REQ_REM.hasDestineId = 0;
-    REQ_REM.hasPayload = 0;
-
-    RES_ADD.hasSourceId = 0;
-    RES_ADD.hasDestineId = 0;
-    RES_ADD.hasPayload = 1;
-
-    RES_LIST.hasSourceId = 0;
-    RES_LIST.hasDestineId = 0;
-    RES_LIST.hasPayload = 1;
-
-    REQ_INF.hasSourceId = 1;
-    REQ_INF.hasDestineId = 1;
-    REQ_INF.hasPayload = 0;
-
-    RES_INF.hasSourceId = 1;
-    RES_INF.hasDestineId = 1;
-    RES_INF.hasPayload = 1;
-
-    ERROR.hasSourceId = 0;
-    ERROR.hasDestineId = 1;
-    ERROR.hasPayload = 1;
-
-    OK.hasSourceId = 0;
-    OK.hasDestineId = 1;
-    OK.hasPayload = 1;
-
-    messageFields = (struct MessageFields[EXISTING_MESSAGES]){REQ_ADD, REQ_REM, RES_ADD, RES_LIST, REQ_INF, RES_INF, ERROR, OK};
-    return messageFields;
-}
+struct MessageFields existingMessages[EXISTING_MESSAGES] = {
+    {0, 0, 0},
+    {1, 0, 0},
+    {1, 0, 0},
+    {0, 0, 1},
+    {1, 1, 0},
+    {1, 1, 1},
+    {0, 1, 1},
+    {0, 1, 1}};
 
 struct Message structureMessage(char *originalMessage)
 {
     char message[MAXSTRINGLENGTH] = "";
     strcpy(message, originalMessage); // copy to avoid changing the message string
-    struct MessageFields *messageFields = initializeMessageFields();
 
     struct Message structuredMessage = {0, 0, 0, NULL};
     int counter = 0;
+    puts("original message");
+    puts(originalMessage);
+
+    puts("let's do that");
+    char payload[MAXSTRINGLENGTH] = "";
 
     // first word is the id - it exists for every message
     char *word = strtok(message, SPLITTER);
     if (word == NULL)
     {
+        puts("word is null.");
         return structuredMessage;
     }
     int messageId = atoi(word);
@@ -68,8 +44,9 @@ struct Message structureMessage(char *originalMessage)
     }
 
     structuredMessage.messageId = messageId;
-    structuredMessage.payload = "";
     counter++;
+
+    struct MessageFields *fields = &existingMessages[structuredMessage.messageId - 1];
 
     while (word != NULL)
     {
@@ -80,50 +57,100 @@ struct Message structureMessage(char *originalMessage)
         }
 
         counter++;
+
         if (counter == 2)
         {
-            if (messageFields[structuredMessage.messageId - 1].hasSourceId == 1)
+            puts("counter 2");
+
+            if (fields->hasSourceId == 1)
             {
+                puts("hasSourceId");
                 structuredMessage.sourceId = atoi(word);
             }
-            else if (messageFields[structuredMessage.messageId - 1].hasDestineId == 1)
+            else if (fields->hasDestineId == 1)
             {
+                puts("hasDestineId");
                 structuredMessage.destineId = atoi(word);
             }
-            else if (messageFields[structuredMessage.messageId - 1].hasPayload == 1)
+            else if (fields->hasPayload == 1)
             {
-                strncat(word, message, strlen(message));
-                strncpy(structuredMessage.payload, word, strlen(word));
+                puts("hasPayload");
+                strcat(payload, word);
+
+                while (word != NULL)
+                {
+                    strcat(payload, SPLITTER);
+                    word = strtok(NULL, " "); // takes next word
+                    if (word == NULL)
+                    {
+                        break;
+                    }
+                    strcat(payload, word);
+                }
+                strcat(payload, word);
                 break;
             }
             else
             {
+                puts("else!");
                 break;
             }
         }
         else if (counter == 3)
         {
-            if (messageFields[structuredMessage.messageId - 1].hasDestineId == 1)
+            puts("counter 3");
+            if (fields->hasSourceId == 1 && fields->hasDestineId == 1)
             {
+                puts("hasDestineId and source id");
                 structuredMessage.destineId = atoi(word);
             }
-            else if (messageFields[structuredMessage.messageId - 1].hasPayload == 1)
+            else if (fields->hasPayload == 1)
             {
-                strncat(word, message, strlen(message));
-                strncpy(structuredMessage.payload, word, strlen(word));
+                puts("hasPayload");
+                puts(word);
+                strcat(payload, word);
+                puts("passed strcat");
+
+                puts(payload);
+
+                while (word != NULL)
+                {
+                    strcat(payload, SPLITTER);
+                    word = strtok(NULL, " "); // takes next word
+                    if (word == NULL)
+                    {
+                        break;
+                    }
+                    strcat(payload, word);
+                }
+                strcat(payload, word);
                 break;
             }
             else
             {
+                puts("else!");
                 break;
             }
         }
         else
         {
-            if (messageFields[structuredMessage.messageId - 1].hasPayload == 1)
+            puts("bigger counter!");
+            if (fields->hasPayload == 1)
             {
-                strncat(word, message, strlen(message));
-                strncpy(structuredMessage.payload, word, strlen(word));
+                puts("hasPayload");
+                strcat(payload, word);
+
+                while (word != NULL)
+                {
+                    strcat(payload, SPLITTER);
+                    word = strtok(NULL, " "); // takes next word
+                    if (word == NULL)
+                    {
+                        break;
+                    }
+                    strcat(payload, word);
+                }
+                strcat(payload, word);
                 break;
             }
             else
@@ -143,28 +170,31 @@ int isErrorMessage(struct Message message)
 
 char *getErrorMessage(struct Message message)
 {
-    if (message.messageId != 7) {
+    if (message.messageId != 7)
+    {
         return NULL;
     }
 
     int messageCode = atoi(message.payload);
-    if (messageCode < 1 || messageCode > 5) {
+    if (messageCode < 1 || messageCode > 5)
+    {
         return NULL;
     }
 
-    switch(messageCode) {
-        case 1:
-            return "Equipment not found";
-            break;
-        case 2:
-            return "Source equipment not found";
-            break;
-        case 3:
-            return "Target equipment not found";
-            break;
-        case 4:
-            return "Equipment limit exceeded";
-            break;
+    switch (messageCode)
+    {
+    case 1:
+        return "Equipment not found";
+        break;
+    case 2:
+        return "Source equipment not found";
+        break;
+    case 3:
+        return "Target equipment not found";
+        break;
+    case 4:
+        return "Equipment limit exceeded";
+        break;
     }
 
     return NULL;
