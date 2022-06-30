@@ -7,8 +7,8 @@
 #include <netdb.h>
 #include <stdlib.h>
 #include <time.h>
-#include <unistd.h>    /* for close() */
-#include <arpa/inet.h> /* for sockaddr_in */
+#include <unistd.h>
+#include <arpa/inet.h>
 #include <pthread.h>
 
 #define MAXSTRINGLENGTH 255
