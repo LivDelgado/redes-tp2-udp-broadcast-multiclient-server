@@ -2,12 +2,12 @@ CC = gcc
 CFLAGS  = -g -Wall
 INCLUDE_FLAGS = -I include/
 
-default: client server
+default: equipment server
 
 
 ## COMPILING THE CLIENT
-client:  client.o
-	$(CC) $(CFLAGS) -o client obj/client.o
+equipment:  client.o
+	$(CC) $(CFLAGS) -o equipment obj/client.o
 
 client.o:  src/client/client.c
 	@mkdir -p obj
