@@ -25,4 +25,7 @@ struct Message
 struct Message structureMessage(char *originalMessage);
 struct MessageFields *initializeMessageFields();
 
+int isErrorMessage(struct Message message);
+char *getErrorMessage(struct Message message);
+
 #endif

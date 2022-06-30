@@ -25,7 +25,8 @@ void *ThreadMain(void *args)
     char *ip = inet_ntoa(from.sin_addr);
     printf("INFO: created new thread to handle client request %s:%d.\n", ip, connection_id);
 
-    sendMessage(threadArgs->buffer, threadArgs->serverSocket, &threadArgs->clientAddrIn, threadArgs->clientAddrLen);
+    // testing error message
+    sendMessage("07 01 03", threadArgs->serverSocket, &threadArgs->clientAddrIn, threadArgs->clientAddrLen);
 
     free(threadArgs);
     numberOfThreads--;

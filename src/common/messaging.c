@@ -135,3 +135,37 @@ struct Message structureMessage(char *originalMessage)
 
     return structuredMessage;
 }
+
+int isErrorMessage(struct Message message)
+{
+    return (message.messageId == 7);
+}
+
+char *getErrorMessage(struct Message message)
+{
+    if (message.messageId != 7) {
+        return NULL;
+    }
+
+    int messageCode = atoi(message.payload);
+    if (messageCode < 1 || messageCode > 5) {
+        return NULL;
+    }
+
+    switch(messageCode) {
+        case 1:
+            return "Equipment not found";
+            break;
+        case 2:
+            return "Source equipment not found";
+            break;
+        case 3:
+            return "Target equipment not found";
+            break;
+        case 4:
+            return "Equipment limit exceeded";
+            break;
+    }
+
+    return NULL;
+}
