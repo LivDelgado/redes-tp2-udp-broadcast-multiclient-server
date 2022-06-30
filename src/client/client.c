@@ -19,6 +19,14 @@ void printErrorAndExit(char *errorMessage)
 
 int main(int argc, char *argv[])
 {
+    if (argc != 3)
+    {
+        printErrorAndExit("ERROR: Invalid arguments. To run the client: client <server address> <server port>");
+    }
+
+    char *serverPort = argv[2];      // second argument is server port
+
+
     /* Create a best-effort datagram socket using UDP */
     int sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     if (sock < 0)
@@ -31,7 +39,7 @@ int main(int argc, char *argv[])
     memset(&broadcastAddr, 0, sizeof(broadcastAddr)); /* Zero out structure */
     broadcastAddr.sin_family = AF_INET;               /* Internet address family */
     broadcastAddr.sin_addr.s_addr = INADDR_ANY;       /* Any incoming interface */
-    broadcastAddr.sin_port = htons(51511);            /* Broadcast port */
+    broadcastAddr.sin_port = htons(atoi(serverPort));            /* Broadcast port */
 
     int broadcast = 1;
     int setBroadcast = setsockopt(sock, SOL_SOCKET, SO_BROADCAST, &broadcast, sizeof(broadcast));

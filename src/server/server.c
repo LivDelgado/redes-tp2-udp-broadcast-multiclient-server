@@ -24,6 +24,67 @@ void printErrorAndExit(char *errorMessage)
     exit(1);
 }
 
+int createUdpSocket()
+{
+    /* Create socket for sending/receiving datagrams */
+    int serverSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    if (serverSocket < 0)
+    {
+        printErrorAndExit("socket() failed");
+    }
+
+    return serverSocket;
+}
+
+void setSocketPermissionToBroadcast(int serverSocket)
+{
+    /* Set socket to allow broadcast */
+    int broadcastPermission = 1;
+    int setSocketPermission = setsockopt(serverSocket, SOL_SOCKET, SO_BROADCAST, (void *)&broadcastPermission, sizeof(broadcastPermission));
+    if (setSocketPermission < 0)
+    {
+        printErrorAndExit("setsockopt() failed");
+    }
+}
+
+struct sockaddr_in createServerAddress(int broadcast, char *port)
+{
+    in_port_t serverPort = htons((in_port_t)atoi(port));
+
+    /* Construct local address structure */
+    struct sockaddr_in broadcastAddr;                 /* Broadcast address */
+    memset(&broadcastAddr, 0, sizeof(broadcastAddr)); /* Zero out structure */
+    broadcastAddr.sin_family = AF_INET;               /* Internet address family */
+    broadcastAddr.sin_port = serverPort;              /* Broadcast port */
+
+    if (broadcast == 1)
+    {
+        broadcastAddr.sin_addr.s_addr = INADDR_BROADCAST;
+    }
+    else
+    {
+        broadcastAddr.sin_addr.s_addr = INADDR_ANY;
+    }
+
+    return broadcastAddr;
+}
+
+void sendMessageTo(struct sockaddr_in serverAddress, int serverSocket, char *message)
+{
+    unsigned int sendStringLen = strlen(message); /* Find length of sendString */
+    size_t numberBytesSent = sendto(serverSocket, message, sendStringLen, 0, (struct sockaddr *)&serverAddress, sizeof(serverAddress));
+    if (numberBytesSent != sendStringLen)
+    {
+        printErrorAndExit("sendto() sent a different number of bytes than expected");
+    }
+}
+
+void sendMessage(int serverSocket, char *port, char *message, int broadcast)
+{
+    struct sockaddr_in serverAddress = createServerAddress(broadcast, port);
+    sendMessageTo(serverAddress, serverSocket, message);
+}
+
 int main(int argc, char *argv[])
 {
     // validate the number of arguments
@@ -39,49 +100,14 @@ int main(int argc, char *argv[])
     {
         port = argv[2]; // second argument (optional) -> port
     }
-    in_port_t serverPort = htons((in_port_t)atoi(port));
 
     // to generate a random number later on
     srand(time(NULL));
 
-    puts("INFO: Initializing the server.");
+    int serverSocket = createUdpSocket();
+    setSocketPermissionToBroadcast(serverSocket);
 
-    /* Create socket for sending/receiving datagrams */
-    int sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-    if (sock < 0)
-    {
-        printErrorAndExit("socket() failed");
-    }
-    puts("INFO: created socket");
-
-    /* Set socket to allow broadcast */
-    int broadcastPermission = 1;
-    if (setsockopt(sock, SOL_SOCKET, SO_BROADCAST, (void *)&broadcastPermission, sizeof(broadcastPermission)) < 0)
-    {
-        printErrorAndExit("setsockopt() failed");
-    }
-    puts("INFO: set socket option to allow broadcast");
-
-    /* Construct local address structure */
-    struct sockaddr_in broadcastAddr;                 /* Broadcast address */
-    memset(&broadcastAddr, 0, sizeof(broadcastAddr)); /* Zero out structure */
-    broadcastAddr.sin_family = AF_INET;               /* Internet address family */
-    broadcastAddr.sin_addr.s_addr = INADDR_BROADCAST; /* Broadcast IP address */
-    broadcastAddr.sin_port = serverPort;              /* Broadcast port */
-    
     char *sendString = "teste";
-    unsigned int sendStringLen = strlen(sendString); /* Find length of sendString */
-    while (1)
-    {
-        /* Broadcast sendString in datagram to clients every 3 seconds*/
-        if (sendto(sock, sendString, sendStringLen, 0, (struct sockaddr *)&broadcastAddr, sizeof(broadcastAddr)) != sendStringLen)
-        {
-            printErrorAndExit("sendto() sent a different number of bytes than expected");
-        }
 
-        puts("INFO: sent message");
-
-        sleep(3); /* Avoids flooding the network */
-    }
-    /* NOT REACHED */
+    sendMessage(serverSocket, port, sendString, 1);
 }
