@@ -68,11 +68,8 @@ void receiveBroadcastMessage(int clientSocket)
     printf("Received: %s\n", recvString); /* Print the received string */
 }
 
-struct addrinfo* getServerAddress(char *serverIpAddress, char *serverPort)
+struct addrinfo *getServerAddress(char *serverIpAddress, char *serverPort)
 {
-    //
-    // ADDRESS - Get foreign address for server:
-    //
     struct addrinfo addrCriteria;                   // Criteria for address match
     memset(&addrCriteria, 0, sizeof(addrCriteria)); // Zero out structure
     addrCriteria.ai_family = AF_INET;               // IPV4
@@ -129,25 +126,36 @@ int main(int argc, char *argv[])
     char *serverPort = argv[2];      // second argument is server port
 
     int clientSocket = createUdpSocket();
-    // bindToBroadcasterServer(clientSocket, serverPort);
+    bindToBroadcasterServer(clientSocket, serverPort);
 
-    struct addrinfo* serverAddress = getServerAddress(serverIpAddress, serverPort);
+    struct addrinfo *serverAddress = getServerAddress(serverIpAddress, serverPort);
 
     while (1)
     {
-        // puts("INFO: receiving message");
-        // receiveBroadcastMessage(clientSocket);
-
         //
-        // testing usual communication
+        // BROADCAST
         //
-        char *echoString = NULL; // create new message
-        size_t echoStringLen;
+        puts("INFO: receiving message");
+        receiveBroadcastMessage(clientSocket);
+        //
+        //
+        //
 
-        printf("> ");
-        getline(&echoString, &echoStringLen, stdin); // get the message from user input
+        /*
+            //
+            // UNICAST
+            //
+            char *echoString = NULL; // create new message
+            size_t echoStringLen;
 
-        sendMessageToServer(clientSocket, echoString, echoStringLen, serverAddress);
-        receiveMessageFromServer(clientSocket);
+            printf("> ");
+            getline(&echoString, &echoStringLen, stdin); // get the message from user input
+
+            sendMessageToServer(clientSocket, echoString, echoStringLen, serverAddress);
+            receiveMessageFromServer(clientSocket);
+            //
+            //
+            //
+        */
     }
 }

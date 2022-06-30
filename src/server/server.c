@@ -142,13 +142,15 @@ int main(int argc, char *argv[])
     int serverSocket = createUdpSocket();
     setSocketPermissionToBroadcast(serverSocket);
 
-    // char *sendString = "teste";
+    char *sendString = "teste";
 
     //
     // BROADCAST
     //
-    // struct sockaddr_in serverAddress = createBroadcastAddress(port);
-    // sendMessageTo(serverSocket, port, sendString);
+    struct sockaddr_in serverAddress = createBroadcastAddress(port);
+    while (1) {
+        sendMessageTo(serverAddress, serverSocket, sendString);
+    }
     //
     //
 
