@@ -52,7 +52,6 @@ int main(int argc, char *argv[])
     {
         printErrorAndExit("socket() failed");
     }
-
     puts("INFO: created socket");
 
     /* Set socket to allow broadcast */
@@ -67,9 +66,9 @@ int main(int argc, char *argv[])
     struct sockaddr_in broadcastAddr;                 /* Broadcast address */
     memset(&broadcastAddr, 0, sizeof(broadcastAddr)); /* Zero out structure */
     broadcastAddr.sin_family = AF_INET;               /* Internet address family */
-    broadcastAddr.sin_addr.s_addr = INADDR_ANY;       /* Broadcast IP address */
+    broadcastAddr.sin_addr.s_addr = INADDR_BROADCAST; /* Broadcast IP address */
     broadcastAddr.sin_port = serverPort;              /* Broadcast port */
-
+    
     char *sendString = "teste";
     unsigned int sendStringLen = strlen(sendString); /* Find length of sendString */
     while (1)
