@@ -1,8 +1,14 @@
 #include <time.h>
 #include <pthread.h>
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "utils.h"
 #include "protocol.h"
+#include "messaging.h"
+#include "control.h"
 
 #define MAXTHREADS 15
 
@@ -25,8 +31,30 @@ void *ThreadMain(void *args)
     char *ip = inet_ntoa(from.sin_addr);
     printf("INFO: created new thread to handle client request %s:%d.\n", ip, connection_id);
 
+    char *message = "";
+
+    if (getEquipment(&from) < 0) // equipment is not connected, will try to connect!
+    {
+        if (alreadyReachedMaxNumberOfConnections()) {
+            message = "07 00 04";
+        } else {
+            puts("did not reach max connections!");
+            int equipmentId = newConnection(&from);
+            puts("new connection!");
+            char *zero = "";
+            if (equipmentId < 10) {
+                zero = "0";
+            }
+            printf("Equipment %s%i added", zero, equipmentId);
+
+            char messageToSend[MAXSTRINGLENGTH] = "";
+            sprintf(messageToSend, "03 %s%i ", zero, equipmentId);
+            message = messageToSend;
+        }
+    }
+
     // testing error message
-    sendMessage("07 01 04", threadArgs->serverSocket, &threadArgs->clientAddrIn, threadArgs->clientAddrLen);
+    sendMessage(message, threadArgs->serverSocket, &threadArgs->clientAddrIn, threadArgs->clientAddrLen);
 
     free(threadArgs);
     numberOfThreads--;

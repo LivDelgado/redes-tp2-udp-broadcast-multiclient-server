@@ -14,10 +14,10 @@ client.o:  src/client/client.c include/protocol.h include/utils.h include/messag
 	$(CC) $(CFLAGS) $(INCLUDE_FLAGS) -pthread -c src/client/client.c -o obj/client.o
 
 ## COMPILING THE SERVER
-server:  server.o protocol.o utils.o
-	$(CC) $(CFLAGS) -pthread -o server obj/server.o obj/protocol.o obj/utils.o
+server:  server.o protocol.o utils.o messaging.o control.o
+	$(CC) $(CFLAGS) -pthread -o server obj/server.o obj/protocol.o obj/utils.o obj/messaging.o obj/control.o
 
-server.o:  src/server/server.c include/protocol.h include/utils.h
+server.o:  src/server/server.c include/protocol.h include/utils.h include/messaging.h include/control.h
 	@mkdir -p obj
 	$(CC) $(CFLAGS) $(INCLUDE_FLAGS) -c src/server/server.c -o obj/server.o
 
@@ -35,6 +35,10 @@ messaging.o:  src/common/messaging.c include/messaging.h include/utils.h
 utils.o:  src/common/utils.c include/utils.h
 	@mkdir -p obj
 	$(CC) $(CFLAGS) $(INCLUDE_FLAGS) -c src/common/utils.c -o obj/utils.o
+
+control.o:  src/server/control.c include/control.h
+	@mkdir -p obj
+	$(CC) $(CFLAGS) $(INCLUDE_FLAGS) -c src/server/control.c -o obj/control.o
 
 
 ## CLEANING THE FILES

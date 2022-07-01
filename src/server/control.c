@@ -1,0 +1,90 @@
+#include "control.h"
+
+int connectedEquipments[MAX_EQUIPMENTS] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+
+int numberConnectedEquipments = 0;
+
+struct ConnectedEquipment equipments[MAX_EQUIPMENTS] = {
+    {-1, NULL},
+    {-1, NULL},
+    {-1, NULL},
+    {-1, NULL},
+    {-1, NULL},
+    {-1, NULL},
+    {-1, NULL},
+    {-1, NULL},
+    {-1, NULL},
+    {-1, NULL},
+    {-1, NULL},
+    {-1, NULL},
+    {-1, NULL},
+    {-1, NULL},
+    {-1, NULL}};
+
+int getNextEquipmentId()
+{
+    for (int i = 0; i < MAX_EQUIPMENTS; i++)
+    {
+        if (connectedEquipments[i] == 0)
+        {
+            return i;
+        }
+    }
+
+    return -1;
+}
+
+void setEquipmentAsConnected(int equipmentId)
+{
+    if (equipmentId < 0 || equipmentId >= MAX_EQUIPMENTS)
+        return;
+    connectedEquipments[equipmentId - 1] = 1;
+}
+
+int alreadyReachedMaxNumberOfConnections()
+{
+    return numberConnectedEquipments >= MAX_EQUIPMENTS;
+}
+
+int newConnection(struct sockaddr_in *equipmentAddress)
+{
+    int equipmentIdInArray = getNextEquipmentId();
+    equipments[equipmentIdInArray].equipmentId = equipmentIdInArray + 1;
+    equipments[equipmentIdInArray].equipmentAddress = equipmentAddress;
+
+    connectedEquipments[equipmentIdInArray] = 1;
+
+    numberConnectedEquipments++;
+
+    return equipments[equipmentIdInArray].equipmentId;
+}
+
+void removeConnection(int equipmentId)
+{
+    int equipmentIdInArray = equipmentId - 1;
+
+    equipments[equipmentIdInArray].equipmentId = -1;
+    equipments[equipmentIdInArray].equipmentAddress = NULL;
+
+    numberConnectedEquipments--;
+
+    connectedEquipments[equipmentIdInArray] = 0;
+}
+
+int getEquipment(struct sockaddr_in *equipmentAddress)
+{
+    int equipmentId = -1;
+    for (int i = 0; i < MAX_EQUIPMENTS; i++)
+    {
+        if (equipments[i].equipmentAddress == NULL)
+            continue;
+
+        if (equipments[i].equipmentAddress == equipmentAddress)
+        {
+            equipmentId = i + 1;
+            break;
+        }
+    }
+
+    return equipmentId;
+}
