@@ -33,14 +33,13 @@ void *ThreadMain(void *args)
 
     char *message = "";
 
-    if (getEquipment(&from) < 0) // equipment is not connected, will try to connect!
+    if (getEquipment(from) < 0) // equipment is not connected, will try to connect!
     {
         if (alreadyReachedMaxNumberOfConnections()) {
             message = "07 00 04";
         } else {
-            puts("did not reach max connections!");
-            int equipmentId = newConnection(&from);
-            puts("new connection!");
+            int equipmentId = newConnection(from);
+
             char *zero = "";
             if (equipmentId < 10) {
                 zero = "0";
@@ -53,7 +52,6 @@ void *ThreadMain(void *args)
         }
     }
 
-    // testing error message
     sendMessage(message, threadArgs->serverSocket, &threadArgs->clientAddrIn, threadArgs->clientAddrLen);
 
     free(threadArgs);

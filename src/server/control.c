@@ -5,21 +5,21 @@ int connectedEquipments[MAX_EQUIPMENTS] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 int numberConnectedEquipments = 0;
 
 struct ConnectedEquipment equipments[MAX_EQUIPMENTS] = {
-    {-1, NULL},
-    {-1, NULL},
-    {-1, NULL},
-    {-1, NULL},
-    {-1, NULL},
-    {-1, NULL},
-    {-1, NULL},
-    {-1, NULL},
-    {-1, NULL},
-    {-1, NULL},
-    {-1, NULL},
-    {-1, NULL},
-    {-1, NULL},
-    {-1, NULL},
-    {-1, NULL}};
+    {-1},
+    {-1},
+    {-1},
+    {-1},
+    {-1},
+    {-1},
+    {-1},
+    {-1},
+    {-1},
+    {-1},
+    {-1},
+    {-1},
+    {-1},
+    {-1},
+    {-1}};
 
 int getNextEquipmentId()
 {
@@ -46,7 +46,7 @@ int alreadyReachedMaxNumberOfConnections()
     return numberConnectedEquipments >= MAX_EQUIPMENTS;
 }
 
-int newConnection(struct sockaddr_in *equipmentAddress)
+int newConnection(struct sockaddr_in equipmentAddress)
 {
     int equipmentIdInArray = getNextEquipmentId();
     equipments[equipmentIdInArray].equipmentId = equipmentIdInArray + 1;
@@ -64,25 +64,28 @@ void removeConnection(int equipmentId)
     int equipmentIdInArray = equipmentId - 1;
 
     equipments[equipmentIdInArray].equipmentId = -1;
-    equipments[equipmentIdInArray].equipmentAddress = NULL;
 
     numberConnectedEquipments--;
 
     connectedEquipments[equipmentIdInArray] = 0;
 }
 
-int getEquipment(struct sockaddr_in *equipmentAddress)
+int getEquipment(struct sockaddr_in equipmentAddress)
 {
     int equipmentId = -1;
-    for (int i = 0; i < MAX_EQUIPMENTS; i++)
+    if (numberConnectedEquipments > 0)
     {
-        if (equipments[i].equipmentAddress == NULL)
-            continue;
-
-        if (equipments[i].equipmentAddress == equipmentAddress)
+        for (int i = 0; i < MAX_EQUIPMENTS; i++)
         {
-            equipmentId = i + 1;
-            break;
+            if (connectedEquipments[i] == 0)
+                continue;
+            if (
+                equipments[i].equipmentAddress.sin_addr.s_addr == equipmentAddress.sin_addr.s_addr &&
+                equipments[i].equipmentAddress.sin_port == equipmentAddress.sin_port)
+            {
+                equipmentId = i + 1;
+                break;
+            }
         }
     }
 
