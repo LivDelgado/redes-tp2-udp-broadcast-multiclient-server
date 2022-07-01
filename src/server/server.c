@@ -26,7 +26,7 @@ void *ThreadMain(void *args)
     printf("INFO: created new thread to handle client request %s:%d.\n", ip, connection_id);
 
     // testing error message
-    sendMessage("07 01 03", threadArgs->serverSocket, &threadArgs->clientAddrIn, threadArgs->clientAddrLen);
+    sendMessage("07 01 04", threadArgs->serverSocket, &threadArgs->clientAddrIn, threadArgs->clientAddrLen);
 
     free(threadArgs);
     numberOfThreads--;

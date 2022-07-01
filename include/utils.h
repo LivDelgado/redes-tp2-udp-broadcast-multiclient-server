@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define MAXSTRINGLENGTH 100
+#define MAXSTRINGLENGTH 130
 
 void printErrorAndExit(char *errorMessage);
 
