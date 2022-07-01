@@ -12,9 +12,16 @@ void sendReqAdd(struct addrinfo *serverAddress, int clientSocket)
 
     if (isErrorMessage(response)) {
         printErrorAndExit(getErrorMessage(response));
-    }
+    } else {
+        int equipmentId = atoi(response.payload);
 
-    printf("response id: %d", response.messageId);
+        char *zero = "";
+        if (equipmentId < 10) {
+            zero = "0";
+        }
+        printf("New ID: %s%i\n", zero, equipmentId);
+        
+    }
 }
 
 int main(int argc, char *argv[])

@@ -8,14 +8,15 @@
 static const char *SPLITTER = " ";
 
 struct MessageFields existingMessages[EXISTING_MESSAGES] = {
-    {0, 0, 0},
-    {1, 0, 0},
-    {1, 0, 0},
-    {0, 0, 1},
-    {1, 1, 0},
-    {1, 1, 1},
-    {0, 1, 1},
-    {0, 1, 1}};
+    {0, 0, 0}, // REQ_ADD
+    {1, 0, 0}, // REQ_REM
+    {0, 0, 1}, // RES_ADD
+    {0, 0, 1}, // RES_LIST
+    {1, 1, 0}, // REQ_INF
+    {1, 1, 1}, // RES_INF
+    {0, 1, 1}, // ERROR
+    {0, 1, 1}  // OK
+};
 
 struct Message structureMessage(char *originalMessage)
 {

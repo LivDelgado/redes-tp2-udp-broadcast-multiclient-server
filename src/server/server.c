@@ -44,7 +44,7 @@ void *ThreadMain(void *args)
             if (equipmentId < 10) {
                 zero = "0";
             }
-            printf("Equipment %s%i added", zero, equipmentId);
+            printf("Equipment %s%i added\n", zero, equipmentId);
 
             char messageToSend[MAXSTRINGLENGTH] = "";
             sprintf(messageToSend, "03 %s%i ", zero, equipmentId);
@@ -106,8 +106,6 @@ int main(int argc, char *argv[])
         struct ThreadArgs *threadArgs = (struct ThreadArgs *)malloc(sizeof(struct ThreadArgs));
         threadArgs->serverSocket = serverSocket;
         threadArgs->clientAddrLen = sizeof(struct sockaddr_in);
-
-        puts("INFO: waiting for the first contact from the client");
 
         receiveMessage(serverSocket, threadArgs->buffer, &threadArgs->clientAddrIn, threadArgs->clientAddrLen);
         createThreadToHandleReceivedMessage(threads, threadArgs);

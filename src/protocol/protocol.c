@@ -81,14 +81,10 @@ void sendMessageToServer(int clientSocket, char *message, struct addrinfo *servA
     {
         printErrorAndExit("ERROR: sent unexpected number of bytes");
     }
-
-    puts("INFO: sent message to server");
 }
 
 char *receiveMessageFromServer(int clientSocket)
 {
-    puts("INFO: receiving message from server");
-
     char buffer[MAXSTRINGLENGTH + 1]; // I/O buffer
     ssize_t numBytes = recv(clientSocket, buffer, MAXSTRINGLENGTH, 0);
     if (numBytes < 0)
