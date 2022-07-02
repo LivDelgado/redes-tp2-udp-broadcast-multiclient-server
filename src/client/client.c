@@ -22,7 +22,7 @@ void printListConnectedEquipments()
 
     for (int i = 0; i < MAX_EQUIPMENTS; i++)
     {
-        if (self.listOfEquipments[i] == 1)
+        if ((self.listOfEquipments[i] == 1) && ((i+1) != self.equipmentId))
         {
             if (hasListedAny == 1)
             {
