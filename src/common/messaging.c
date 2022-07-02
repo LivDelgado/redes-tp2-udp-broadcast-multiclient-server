@@ -20,7 +20,8 @@ struct MessageFields existingMessages[EXISTING_MESSAGES] = {
 
 struct Message structureMessage(char *originalMessage)
 {
-    char message[MAXSTRINGLENGTH] = "";
+    char message[MAXSTRINGLENGTH];
+    memset(message, 0, sizeof(message));
     strcpy(message, originalMessage); // copy to avoid changing the message string
 
     struct Message structuredMessage = {0, 0, 0, NULL};
@@ -42,7 +43,8 @@ struct Message structureMessage(char *originalMessage)
     counter++;
 
     struct MessageFields *fields = &existingMessages[structuredMessage.messageId - 1];
-    char payload[MAXSTRINGLENGTH] = "";
+    char payload[MAXSTRINGLENGTH];
+    memset(payload, 0, sizeof(payload));
 
     while (word != NULL)
     {
