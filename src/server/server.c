@@ -35,13 +35,17 @@ void *ThreadMain(void *args)
 
     if (getEquipment(from) < 0) // equipment is not connected, will try to connect!
     {
-        if (alreadyReachedMaxNumberOfConnections()) {
+        if (alreadyReachedMaxNumberOfConnections())
+        {
             message = "07 00 04";
-        } else {
+        }
+        else
+        {
             int equipmentId = newConnection(from);
 
             char *zero = "";
-            if (equipmentId < 10) {
+            if (equipmentId < 10)
+            {
                 zero = "0";
             }
             printf("Equipment %s%i added\n", zero, equipmentId);
@@ -94,6 +98,7 @@ int main(int argc, char *argv[])
     int serverSocket = createUdpSocket();
     setSocketPermissionToBroadcast(serverSocket);
 
+    /*
     //
     // THREADS
     //
@@ -110,31 +115,36 @@ int main(int argc, char *argv[])
         receiveMessage(serverSocket, threadArgs->buffer, &threadArgs->clientAddrIn, threadArgs->clientAddrLen);
         createThreadToHandleReceivedMessage(threads, threadArgs);
     }
+    //
+    //
+    //
+    */
 
-    /*
+    //
+    // UNICAST
+    //
+    //createAddress(serverSocket, port);
+    //    while (1)
+    //    {
+    //puts("receiving message");
+    //receiveMessageAndRespond(serverSocket);
+    //    }
+    //
+    //
+    //
+    //puts("received and responded");
+
     //
     // BROADCAST
     //
     char *sendString = "teste";
     struct sockaddr_in serverAddress = createBroadcastAddress(port);
-    while (1) {
-        sendMessageTo(serverAddress, serverSocket, sendString);
-    }
-    //
-    //
-    */
-
-    /*
-    //
-    // UNICAST
-    //
-    createAddress(serverSocket, port);
     while (1)
     {
-        receiveMessageAndRespond(serverSocket);
+        sendMessageTo(serverAddress, serverSocket, sendString);
+        puts("sent! waiting 5");
+        sleep(5);
     }
     //
     //
-    //
-    */
 }

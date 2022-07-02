@@ -14,25 +14,24 @@ int createUdpSocket()
 
 void bindToBroadcasterServer(int clientSocket, char *serverPort)
 {
-    /* Construct bind structure */
-    struct sockaddr_in broadcastAddr;                 /* Broadcast Address */
-    memset(&broadcastAddr, 0, sizeof(broadcastAddr)); /* Zero out structure */
-    broadcastAddr.sin_family = AF_INET;               /* Internet address family */
-    broadcastAddr.sin_addr.s_addr = INADDR_ANY;       /* Any incoming interface */
-    broadcastAddr.sin_port = htons(atoi(serverPort)); /* Broadcast port */
-
     int broadcast = 1;
-    int setBroadcast = setsockopt(clientSocket, SOL_SOCKET, SO_BROADCAST, &broadcast, sizeof(broadcast));
+    int setBroadcast = setsockopt(clientSocket, SOL_SOCKET, SO_BROADCAST | SO_REUSEADDR, &broadcast, sizeof(broadcast));
     if (setBroadcast < 0)
     {
         printErrorAndExit("ERROR: failed to set broadcast socket option");
     }
-    setsockopt(clientSocket, SOL_SOCKET, SO_REUSEADDR, &broadcast, sizeof(broadcast));
 
-    /* Bind to the broadcast port */
+    // Construct bind structure
+    struct sockaddr_in broadcastAddr;                 // Broadcast Address
+    memset(&broadcastAddr, 0, sizeof(broadcastAddr)); // Zero out structure
+    broadcastAddr.sin_family = AF_INET;               // Internet address family
+    broadcastAddr.sin_addr.s_addr = INADDR_ANY;       // Any incoming interface
+    broadcastAddr.sin_port = htons(atoi(serverPort)); // Broadcast port
+
+    // Bind to the broadcast port
     if (bind(clientSocket, (struct sockaddr *)&broadcastAddr, sizeof(broadcastAddr)) < 0)
     {
-        printErrorAndExit("bind() failed");
+        printErrorAndExit("broadcast bind() failed");
     }
 }
 
@@ -96,10 +95,9 @@ char *receiveMessageFromServer(int clientSocket)
     return returnMessage;
 }
 
-
-void receiveMessageAndRespond(int serverSocket, struct sockaddr_in clntAddr)
+void receiveMessageAndRespond(int serverSocket)
 {
-    // struct sockaddr_storage clntAddr; // Client address
+    struct sockaddr_storage clntAddr; // Client address
 
     // Block until receive message from a client
     char buffer[MAXSTRINGLENGTH]; // I/O buffer
@@ -122,7 +120,6 @@ void receiveMessageAndRespond(int serverSocket, struct sockaddr_in clntAddr)
     }
 }
 
-
 char *receiveMessage(int serverSocket, char *buffer, struct sockaddr_in *clientAddrIn, socklen_t clientAddrLen)
 {
     int numBytesRcvd = recvfrom(
@@ -131,11 +128,10 @@ char *receiveMessage(int serverSocket, char *buffer, struct sockaddr_in *clientA
     {
         printErrorAndExit("ERROR: recvfrom failed");
     }
-    
+
     char *output = buffer;
     return output;
 }
-
 
 void sendMessage(char *response, int serverSocket, struct sockaddr_in *clientAddrIn, socklen_t clientAddrLen)
 {
@@ -147,18 +143,16 @@ void sendMessage(char *response, int serverSocket, struct sockaddr_in *clientAdd
     }
 }
 
-
 void setSocketPermissionToBroadcast(int serverSocket)
 {
     /* Set socket to allow broadcast */
     int broadcastPermission = 1;
-    int setSocketPermission = setsockopt(serverSocket, SOL_SOCKET, SO_BROADCAST, (void *)&broadcastPermission, sizeof(broadcastPermission));
+    int setSocketPermission = setsockopt(serverSocket, SOL_SOCKET, SO_BROADCAST | SO_REUSEADDR, (void *)&broadcastPermission, sizeof(broadcastPermission));
     if (setSocketPermission < 0)
     {
         printErrorAndExit("setsockopt() failed");
     }
 }
-
 
 struct sockaddr_in createBroadcastAddress(char *port)
 {
@@ -206,5 +200,3 @@ void sendMessageTo(struct sockaddr_in serverAddress, int serverSocket, char *mes
         printErrorAndExit("sendto() sent a different number of bytes than expected");
     }
 }
-
-

@@ -24,7 +24,7 @@ void sendMessageToServer(int clientSocket, char *message, struct addrinfo *servA
 char *receiveMessageFromServer(int clientSocket);
 
 // SERVER FUNCTIONS
-void receiveMessageAndRespond(int serverSocket, struct sockaddr_in clntAddr);
+void receiveMessageAndRespond(int serverSocket);
 char *receiveMessage(int serverSocket, char *buffer, struct sockaddr_in *clientAddrIn, socklen_t clientAddrLen);
 void sendMessage(char *response, int serverSocket, struct sockaddr_in *clientAddrIn, socklen_t clientAddrLen);
 
