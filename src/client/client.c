@@ -19,9 +19,7 @@ Equipment self;
 char *listConnectedEquipmentsAsString()
 {
     char equipmentString[5] = "";
-    memset(equipmentString, 0, sizeof(equipmentString));
     char output[MAXSTRINGLENGTH] = "";
-    memset(output, 0, sizeof(output));
 
     for (int i = 0; i < MAX_EQUIPMENTS; i++)
     {
@@ -109,7 +107,6 @@ void processResAdd(struct Message message)
 void processResList(struct Message message)
 {
     char payload[MAXSTRINGLENGTH];
-    memset(payload, 0, sizeof(payload));
     strcpy(payload, message.payload); // copy to avoid changing the payload
 
     char *word = strtok(payload, SPLITTER);
@@ -170,7 +167,6 @@ void processReqInf(struct Message message, struct ClientThreadArguments *threadD
     }
 
     char responseResInfMessage[MAXSTRINGLENGTH] = "";
-    memset(responseResInfMessage, 0, sizeof(responseResInfMessage));
     sprintf(
         responseResInfMessage,
         "06 %s%i %s%i %i.%i%i",
@@ -278,7 +274,6 @@ void *sendUnicastThread(void *data)
             else if (strncmp(messageFromTerminal, "request information from", 24) == 0)
             {
                 char destineIdStr[3];
-                memset(destineIdStr, 0, sizeof(destineIdStr));
                 memcpy(destineIdStr, &messageFromTerminal[strlen(messageFromTerminal) - 2], 2);
                 destineIdStr[2] = '\0';
 
