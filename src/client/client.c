@@ -21,20 +21,23 @@ char *listConnectedEquipmentsAsString()
     char equipmentString[5] = "";
     char output[MAXSTRINGLENGTH] = "";
 
+    int hasListedAny = 0;
+
     for (int i = 0; i < MAX_EQUIPMENTS; i++)
     {
-        if (i > 0)
-        {
-            strcat(output, SPLITTER);
-        }
         if (self.listOfEquipments[i] == 1)
         {
+            if (hasListedAny == 1)
+            {
+                strcat(output, SPLITTER);
+            }
             int equipmentId = i + 1;
             char *zero = "";
             if (equipmentId < 10)
             {
                 zero = "0";
             }
+            hasListedAny = 1;
             sprintf(equipmentString, "%s%i", zero, equipmentId);
             strcat(output, equipmentString);
         }
@@ -142,9 +145,7 @@ void processOk(struct Message message)
 {
     if (message.destineId == self.equipmentId)
     {
-        // NEEDED OUTPUT!!!
-        puts("Successful removal");
-        //
+        printErrorAndExit("Successful removal");
     }
 }
 
