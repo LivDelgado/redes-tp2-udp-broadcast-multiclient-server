@@ -120,9 +120,17 @@ int main(int argc, char *argv[])
     char *serverIpAddress = argv[1]; // first argument is server address
     char *serverPort = argv[2];      // second argument is server port
 
+    //
+    // CREATING SOCKETS
+    //
     int clientUnicastSocket = createUdpSocket();
+
     int clientBroadcastSocket = createUdpSocket();
     bindToBroadcasterServer(clientBroadcastSocket, serverPort);
+    //
+    //
+    //
+
     struct addrinfo *serverAddress = getServerAddress(serverIpAddress, serverPort);
 
 
@@ -155,7 +163,7 @@ int main(int argc, char *argv[])
     broadcastListenetThreadArgs->clientUnicastSocket = clientUnicastSocket;
     broadcastListenetThreadArgs->clientBroadcastSocket = clientBroadcastSocket;
     broadcastListenetThreadArgs->serverAddress = serverAddress;
-    int broadcastListenetThreadStatus = pthread_create(&broadcastListenerThread, NULL, sendUnicastThread, (void *)broadcastListenetThreadArgs);
+    int broadcastListenetThreadStatus = pthread_create(&broadcastListenerThread, NULL, receiveBroadcastThread, (void *)broadcastListenetThreadArgs);
     if (broadcastListenetThreadStatus != 0)
     {
         printErrorAndExit("ERROR: failed to create broadcastListenerThread");

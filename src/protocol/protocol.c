@@ -46,6 +46,9 @@ char *receiveBroadcastMessage(int clientSocket)
         printErrorAndExit("recvfrom() failed");
     }
 
+    puts("INFO: received broadcast");
+    puts(recvString);
+
     recvString[recvStringLen] = '\0';
     char *output = recvString;
     return output;

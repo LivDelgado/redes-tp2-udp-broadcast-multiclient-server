@@ -108,8 +108,8 @@ int main(int argc, char *argv[])
     pthread_t threads[MAXTHREADS];
 
     createAddress(serverUnicastSocket, port);
-    while (1)
-    {
+//    while (1)
+//    {
         // Create separate memory for client argument
         struct ThreadArgs *threadArgs = (struct ThreadArgs *)malloc(sizeof(struct ThreadArgs));
         threadArgs->serverUnicastSocket = serverUnicastSocket;
@@ -118,7 +118,7 @@ int main(int argc, char *argv[])
 
         receiveMessage(serverUnicastSocket, threadArgs->buffer, &threadArgs->clientAddrIn, threadArgs->clientAddrLen);
         createThreadToHandleReceivedMessage(threads, threadArgs);
-    }
+//    }
     //
     //
     //
