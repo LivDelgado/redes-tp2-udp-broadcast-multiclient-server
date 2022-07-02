@@ -6,6 +6,14 @@
 #include <pthread.h>
 
 #define STANDARD_INPUT 0 // File Descriptor - Standard input
+#define MAX_EQUIPMENTS 15 // maximum number of connected equipments
+
+typedef struct {
+    int equipmentId;
+    int listOfEquipments[MAX_EQUIPMENTS]; // works like a boolean, 0 does not exist, 1 exists
+} Equipment;
+
+Equipment self;
 
 void sendReqAdd(struct addrinfo *serverAddress, int clientSocket)
 {
@@ -41,13 +49,25 @@ int readFromStandardInput(char *message)
 void processResAdd(struct Message message)
 {
     int equipmentId = atoi(message.payload);
+    int equipmentIdOnArray = equipmentId - 1;
 
     char *zero = "";
     if (equipmentId < 10)
     {
         zero = "0";
     }
-    printf("New ID: %s%i\n", zero, equipmentId);
+
+    self.listOfEquipments[equipmentIdOnArray] = 1;
+
+    if (self.equipmentId == 0) // it means that this equipment hasn't connected yet, then it should register things!
+    {
+        self.equipmentId = equipmentId;
+        printf("New ID: %s%i\n", zero, equipmentId);
+    }
+    else { // equipment is already connected
+        printf("Equipment %s%i added\n", zero, equipmentId);
+    }
+    
 }
 
 void processMessage(char *message)
@@ -143,6 +163,11 @@ int main(int argc, char *argv[])
 
     // send first connection message
     puts("INFO: connecting to the server...");
+    self.equipmentId = 0;
+    for (int i=0; i < MAX_EQUIPMENTS; i++)
+    {
+        self.listOfEquipments[i] = 0;
+    }
     sendReqAdd(serverAddress, clientUnicastSocket);
 
     //
