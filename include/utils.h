@@ -10,5 +10,6 @@ static const char *SPLITTER = " ";
 
 void printErrorAndExit(char *errorMessage);
 
+int getRandomNumber();
 
 #endif

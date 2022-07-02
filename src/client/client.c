@@ -140,17 +140,45 @@ void processOk(struct Message message)
     }
 }
 
-void processReqInf(struct Message message)
+void processReqInf(struct Message message, struct ClientThreadArguments *threadData)
 {
     puts("requested information");
     // generate information
+    char *sourceZero = "";
+    if (message.sourceId < 10)
+    {
+        sourceZero = "0";
+    }
+    char *destineZero = "";
+    if (message.destineId < 10)
+    {
+        destineZero = "0";
+    }
+
+    char responseResInfMessage[MAXSTRINGLENGTH] = "";
+    sprintf(
+        responseResInfMessage,
+        "06 %s%i %s%i %i.%i%i",
+        destineZero, message.destineId,
+        sourceZero, message.sourceId,
+        getRandomNumber(), getRandomNumber(), getRandomNumber());
+    
     // respond RES_INF(IdEQj, IdEQi, PAYLOAD).
+    sendMessageToServer(threadData->clientUnicastSocket, responseResInfMessage, threadData->serverAddress);
 }
 
-void processMessage(char *message)
+void processResInf(struct Message message)
 {
-//    char copiedMessage[MAXSTRINGLENGTH] = "";
-//    strcpy(copiedMessage, message);
+    char *zero = "";
+    if (message.sourceId < 10)
+    {
+        zero = "0";
+    }
+    printf("Value from %s%i: %s\n", zero, message.sourceId, message.payload);
+}
+
+void processMessage(char *message, struct ClientThreadArguments *threadData)
+{
     struct Message response = structureMessage(message);
 
     if (isErrorMessage(response))
@@ -175,7 +203,11 @@ void processMessage(char *message)
             processOk(response);
             break;
         case REQ_INF:
-            processReqInf(response);
+            processReqInf(response, threadData);
+            break;
+        case RES_INF:
+            processResInf(response);
+            break;
         default:
             break;
         }
@@ -188,7 +220,7 @@ void *receiveUnicastThread(void *data)
 
     while (1)
     {
-        processMessage(receiveMessageFromServer(threadData->clientUnicastSocket, threadData->serverAddress));
+        processMessage(receiveMessageFromServer(threadData->clientUnicastSocket, threadData->serverAddress), threadData);
     }
 
     free(threadData);
@@ -201,7 +233,7 @@ void *receiveBroadcastThread(void *data)
 
     while (1)
     {
-        processMessage(receiveBroadcastMessage(threadData->clientBroadcastSocket));
+        processMessage(receiveBroadcastMessage(threadData->clientBroadcastSocket), threadData);
     }
 
     free(threadData);

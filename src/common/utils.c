@@ -7,3 +7,9 @@ void printErrorAndExit(char *errorMessage)
     exit(1);
 }
 
+
+// generate random number between 1 and 10
+int getRandomNumber()
+{
+    return (rand() % 9) + 1;
+}
