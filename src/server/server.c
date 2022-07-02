@@ -13,6 +13,33 @@ void *processMessageThread(void *args)
     puts("processor!!");
     puts(threadData->buffer);
 
+    char *message = "";
+    struct sockaddr_in from = threadData->clientAddrIn;
+
+    if (getEquipment(from) < 0) // equipment is not connected, will try to connect!
+    {
+        if (alreadyReachedMaxNumberOfConnections())
+        {
+            message = "07 00 04";
+        }
+        else
+        {
+            int equipmentId = newConnection(from);
+
+            char *zero = "";
+            if (equipmentId < 10)
+            {
+                zero = "0";
+            }
+            printf("Equipment %s%i added\n", zero, equipmentId);
+
+            char messageToSend[MAXSTRINGLENGTH];
+            memset(messageToSend, 0, sizeof(messageToSend));
+            sprintf(messageToSend, "03 %s%i ", zero, equipmentId);
+            message = messageToSend;
+        }
+    }
+
     free(threadData);
     pthread_exit(NULL);
 }
@@ -54,34 +81,6 @@ void *sendUnicastThread(void *args)
     struct sockaddr_in from = threadData->clientAddrIn;
     char *ip = inet_ntoa(from.sin_addr);
     printf("INFO: created new thread to handle client request %s:%d.\n", ip, connection_id);
-
-    /*
-    char *message = "";
-
-    if (getEquipment(from) < 0) // equipment is not connected, will try to connect!
-    {
-        if (alreadyReachedMaxNumberOfConnections())
-        {
-            message = "07 00 04";
-        }
-        else
-        {
-            int equipmentId = newConnection(from);
-
-            char *zero = "";
-            if (equipmentId < 10)
-            {
-                zero = "0";
-            }
-            printf("Equipment %s%i added\n", zero, equipmentId);
-
-            char messageToSend[MAXSTRINGLENGTH];
-            memset(messageToSend, 0, sizeof(messageToSend));
-            sprintf(messageToSend, "03 %s%i ", zero, equipmentId);
-            message = messageToSend;
-        }
-    }
-    */
 
     // sendMessage(threadData->buffer, threadData->serverUnicastSocket, &threadData->clientAddrIn, threadData->clientAddrLen);
 
