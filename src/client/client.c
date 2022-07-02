@@ -57,6 +57,7 @@ void processResAdd(struct Message message)
         zero = "0";
     }
 
+    // register new equipment on the list
     self.listOfEquipments[equipmentIdOnArray] = 1;
 
     if (self.equipmentId == 0) // it means that this equipment hasn't connected yet, then it should register things!
@@ -69,6 +70,24 @@ void processResAdd(struct Message message)
     }
     
 }
+
+void processResList(struct Message message)
+{
+    char payload[MAXSTRINGLENGTH];
+    strcpy(payload, message.payload); // copy to avoid changing the payload
+
+    char *word = strtok(payload, SPLITTER);
+    while (word != NULL)
+    {
+        int equipmentId = atoi(word);
+        int equipmentIdOnArray = equipmentId - 1;
+        self.listOfEquipments[equipmentIdOnArray] = 1;
+        word = strtok(NULL, " "); // takes next word
+    }
+
+    memset(payload, 0, sizeof(payload));
+}
+
 
 void processMessage(char *message)
 {
@@ -85,6 +104,9 @@ void processMessage(char *message)
         {
         case RES_ADD:
             processResAdd(response);
+            break;
+        case RES_LIST:
+            processResList(response);
             break;
         default:
             break;

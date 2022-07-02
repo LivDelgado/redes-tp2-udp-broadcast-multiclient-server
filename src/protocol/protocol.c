@@ -47,9 +47,6 @@ char *receiveBroadcastMessage(int clientSocket)
         printErrorAndExit("recvfrom() failed");
     }
 
-    puts("INFO: received broadcast");
-    puts(messageReceived);
-
     messageReceived[recvStringLen] = '\0';
     char *output = messageReceived;
     return output;
@@ -99,9 +96,6 @@ char *receiveMessageFromServer(int clientSocket, struct addrinfo *servAddr)
     {
         printErrorAndExit("ERROR: recvfrom() failed");
     }
-
-    puts("INFO: message received");
-    puts(messageReceived);
 
     char *returnMessage = messageReceived;
     return returnMessage;

@@ -10,9 +10,6 @@ void *processMessageThread(void *args)
 {
     struct ServerThreadArguments *threadData = (struct ServerThreadArguments *)args;
 
-    puts("processor!!");
-    puts(threadData->buffer);
-
     char *message = "";
     struct sockaddr_in from = threadData->clientAddrIn;
 
@@ -63,8 +60,6 @@ void *receiveUnicastThread(void *args)
     while (1)
     {
         receiveMessage(threadData->serverUnicastSocket, threadData->buffer, &threadData->clientAddrIn, threadData->clientAddrLen);
-        puts("received message!");
-        puts(threadData->buffer);
 
         struct ServerThreadArguments *newThreadArgs = (struct ServerThreadArguments *)malloc(sizeof(struct ServerThreadArguments));
         *newThreadArgs = *threadData;
@@ -104,7 +99,6 @@ void *sendBroadcastThread(void *args)
     while (1)
     {
         sendMessageTo(*(threadData->broadcastServerAddress), threadData->serverBroadcastSocket, sendString);
-        puts("sent! waiting 5");
         sleep(5);
     }
 
