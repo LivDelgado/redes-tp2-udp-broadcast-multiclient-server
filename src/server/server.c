@@ -18,12 +18,33 @@ struct ThreadArgs
 {
     int serverBroadcastSocket;
     int serverUnicastSocket;
+    struct sockaddr_in *broadcastServerAddress;
     struct sockaddr_in clientAddrIn;
     socklen_t clientAddrLen;
     char buffer[MAXSTRINGLENGTH];
 };
 
-void *ThreadMain(void *args)
+void *receiveUnicastThread(void *args)
+{
+    struct ThreadArgs *threadData = (struct ThreadArgs *)args;
+
+    int connection_id = threadData->clientAddrIn.sin_port;
+    struct sockaddr_in from = threadData->clientAddrIn;
+    char *ip = inet_ntoa(from.sin_addr);
+    printf("INFO: created new thread to handle client request %s:%d.\n", ip, connection_id);
+
+    while (1)
+    {
+        receiveMessage(threadData->serverUnicastSocket, threadData->buffer, &threadData->clientAddrIn, threadData->clientAddrLen);
+        puts("received message!");
+        puts(threadData->buffer);
+    }
+
+    free(threadData);
+    pthread_exit(NULL);
+}
+
+void *sendUnicastThread(void *args)
 {
     struct ThreadArgs *threadArgs = (struct ThreadArgs *)args;
 
@@ -59,24 +80,27 @@ void *ThreadMain(void *args)
     }
     */
 
-    sendMessage(threadArgs->buffer, threadArgs->serverUnicastSocket, &threadArgs->clientAddrIn, threadArgs->clientAddrLen);
+    // sendMessage(threadArgs->buffer, threadArgs->serverUnicastSocket, &threadArgs->clientAddrIn, threadArgs->clientAddrLen);
 
     free(threadArgs);
     numberOfThreads--;
     return NULL;
 }
 
-void createThreadToHandleReceivedMessage(pthread_t *threads, struct ThreadArgs *threadArgs)
+void *sendBroadcastThread(void *args)
 {
-    int threadStatus = pthread_create(&threads[numberOfThreads], NULL, ThreadMain, (void *)threadArgs);
-    if (threadStatus != 0)
+    struct ThreadArgs *threadData = (struct ThreadArgs *)args;
+
+    char *sendString = "teste";
+    while (1)
     {
-        printErrorAndExit("ERROR: failed to create thread");
+        sendMessageTo(*(threadData->broadcastServerAddress), threadData->serverBroadcastSocket, sendString);
+        puts("sent! waiting 5");
+        sleep(5);
     }
-    else
-    {
-        numberOfThreads++;
-    }
+
+    free(threadData);
+    pthread_exit(NULL);
 }
 
 int main(int argc, char *argv[])
@@ -98,30 +122,68 @@ int main(int argc, char *argv[])
     // to generate a random number later on
     srand(time(NULL));
 
+    //
+    // CREATING SOCKETS
+    //
     int serverBroadcastSocket = createUdpSocket();
     int serverUnicastSocket = createUdpSocket();
     setSocketPermissionToBroadcast(serverBroadcastSocket);
+    //
+
+    //
+    // PREPARING SERVER ADDRESS
+    //
+    createAddress(serverUnicastSocket, port);
+    struct sockaddr_in broadcastServerAddress = createBroadcastAddress(BROADCAST_PORT);
+    //
 
     //
     // THREADS
     //
-    pthread_t threads[MAXTHREADS];
+    pthread_t unicastListenerThread, unicastSenderThread, broadcastSenderThread;
 
-    createAddress(serverUnicastSocket, port);
-//    while (1)
-//    {
-        // Create separate memory for client argument
-        struct ThreadArgs *threadArgs = (struct ThreadArgs *)malloc(sizeof(struct ThreadArgs));
-        threadArgs->serverUnicastSocket = serverUnicastSocket;
-        threadArgs->serverBroadcastSocket = serverBroadcastSocket;
-        threadArgs->clientAddrLen = sizeof(struct sockaddr_in);
+    struct ThreadArgs *unicastListenerThreadArgs = (struct ThreadArgs *)malloc(sizeof(struct ThreadArgs));
+    unicastListenerThreadArgs->serverUnicastSocket = serverUnicastSocket;
+    unicastListenerThreadArgs->serverBroadcastSocket = serverBroadcastSocket;
+    unicastListenerThreadArgs->clientAddrLen = sizeof(struct sockaddr_in);
+    unicastListenerThreadArgs->broadcastServerAddress = &broadcastServerAddress;
+    int unicastListenerThreadStatus = pthread_create(&unicastListenerThread, NULL, receiveUnicastThread, (void *)unicastListenerThreadArgs);
+    if (unicastListenerThreadStatus != 0)
+    {
+        printErrorAndExit("ERROR: failed to create unicastListenerThread");
+    }
 
-        receiveMessage(serverUnicastSocket, threadArgs->buffer, &threadArgs->clientAddrIn, threadArgs->clientAddrLen);
-        createThreadToHandleReceivedMessage(threads, threadArgs);
-//    }
-    //
-    //
-    //
+    struct ThreadArgs *unicastSenderThreadArgs = (struct ThreadArgs *)malloc(sizeof(struct ThreadArgs));
+    unicastSenderThreadArgs->serverUnicastSocket = serverUnicastSocket;
+    unicastSenderThreadArgs->serverBroadcastSocket = serverBroadcastSocket;
+    unicastSenderThreadArgs->clientAddrLen = sizeof(struct sockaddr_in);
+    unicastSenderThreadArgs->broadcastServerAddress = &broadcastServerAddress;
+    int unicastSenderThreadStatus = pthread_create(&unicastSenderThread, NULL, sendUnicastThread, (void *)unicastSenderThreadArgs);
+    if (unicastSenderThreadStatus != 0)
+    {
+        printErrorAndExit("ERROR: failed to create unicastSenderThread");
+    }
+
+    struct ThreadArgs *broadcastSenderThreadArgs = (struct ThreadArgs *)malloc(sizeof(struct ThreadArgs));
+    broadcastSenderThreadArgs->serverUnicastSocket = serverUnicastSocket;
+    broadcastSenderThreadArgs->serverBroadcastSocket = serverBroadcastSocket;
+    broadcastSenderThreadArgs->clientAddrLen = sizeof(struct sockaddr_in);
+    broadcastSenderThreadArgs->broadcastServerAddress = &broadcastServerAddress;
+    int broadcastSenderThreadStatus = pthread_create(&broadcastSenderThread, NULL, sendBroadcastThread, (void *)broadcastSenderThreadArgs);
+    if (broadcastSenderThreadStatus != 0)
+    {
+        printErrorAndExit("ERROR: failed to create broadcastSenderThread");
+    }
+
+
+    pthread_join(unicastListenerThread, NULL);
+    //pthread_join(unicastSenderThread, NULL);
+    pthread_join(broadcastSenderThread, NULL);
+
+
+    // receiveMessage(serverUnicastSocket, threadArgs->buffer, &threadArgs->clientAddrIn, threadArgs->clientAddrLen);
+    // createThreadToHandleReceivedMessage(threads, threadArgs);
+
 
     /*
     //
@@ -139,6 +201,7 @@ int main(int argc, char *argv[])
     puts("received and responded");
     */
 
+    /*
     //
     // BROADCAST
     //
@@ -152,4 +215,5 @@ int main(int argc, char *argv[])
     }
     //
     //
+    */
 }
