@@ -44,6 +44,9 @@ int getEquipment(struct sockaddr_in equipmentAddress);
 char *listConnectedEquipmentsAsString();
 
 // return equipment id if connected, if not it returns -1
-int getEquipmentById(int equipmentId);
+int equipmentExist(int equipmentId);
+
+// get connected equipment address
+struct sockaddr_in getEquipmentAddress(int equipmentId);
 
 #endif

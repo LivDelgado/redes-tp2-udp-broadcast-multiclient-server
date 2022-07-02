@@ -43,7 +43,7 @@ void processReqAdd(struct ServerThreadArguments *threadData, struct Message mess
 
 void processReqRem(struct ServerThreadArguments *threadData, struct Message message)
 {
-    if (getEquipmentById(message.sourceId) < 0)
+    if (equipmentExist(message.sourceId) < 0)
     { // check if equipment exists
         sendMessage(
             constructMessageWithThreeFields(7, message.sourceId, 1),
@@ -68,6 +68,50 @@ void processReqRem(struct ServerThreadArguments *threadData, struct Message mess
     }
 }
 
+void processReqInf(struct ServerThreadArguments *threadData, struct Message message)
+{
+    if (equipmentExist(message.sourceId) < 0)
+    {
+
+        // 2.1 - data processing flow!
+        char *zero = "";
+        if (message.sourceId < 10)
+        {
+            zero = "0";
+        }
+        printf("Equipment %s%i not found\n", zero, message.sourceId);
+        // send error 2 message
+        sendMessage(
+            constructMessageWithThreeFields(7, message.sourceId, 2),
+            threadData->serverUnicastSocket, &threadData->clientAddrIn, threadData->clientAddrLen);
+    }
+    else if (equipmentExist(message.destineId) < 0)
+    {
+        // 2.1 - data processing flow!
+        char *zero = "";
+        if (message.destineId < 10)
+        {
+            zero = "0";
+        }
+        // 2.2.1
+        printf("Equipment %s%i not found\n", zero, message.destineId);
+        // send error 2 message
+        sendMessage(
+            constructMessageWithThreeFields(7, message.destineId, 3),
+            threadData->serverUnicastSocket, &threadData->clientAddrIn, threadData->clientAddrLen);
+    }
+    else
+    {
+        puts("gonna send the req inf to the other client..");
+        puts(threadData->buffer);
+
+        // send req_inf to destine address
+        struct sockaddr_in destineAddress = getEquipmentAddress(message.destineId);
+        sendMessage(
+            threadData->buffer, threadData->serverUnicastSocket, &destineAddress, threadData->clientAddrLen);
+    }
+}
+
 void *processMessageThread(void *args)
 {
     struct ServerThreadArguments *threadData = (struct ServerThreadArguments *)args;
@@ -82,6 +126,8 @@ void *processMessageThread(void *args)
     case REQ_REM:
         processReqRem(threadData, messageReceived);
         break;
+    case REQ_INF:
+        processReqInf(threadData, messageReceived);
     default:
         break;
     }

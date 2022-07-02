@@ -140,8 +140,17 @@ void processOk(struct Message message)
     }
 }
 
+void processReqInf(struct Message message)
+{
+    puts("requested information");
+    // generate information
+    // respond RES_INF(IdEQj, IdEQi, PAYLOAD).
+}
+
 void processMessage(char *message)
 {
+//    char copiedMessage[MAXSTRINGLENGTH] = "";
+//    strcpy(copiedMessage, message);
     struct Message response = structureMessage(message);
 
     if (isErrorMessage(response))
@@ -165,6 +174,8 @@ void processMessage(char *message)
         case OK:
             processOk(response);
             break;
+        case REQ_INF:
+            processReqInf(response);
         default:
             break;
         }
