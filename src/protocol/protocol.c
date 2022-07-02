@@ -15,17 +15,18 @@ int createUdpSocket()
 void bindToBroadcasterServer(int clientSocket, char *serverPort)
 {
     int broadcast = 1;
-    int setBroadcast = setsockopt(clientSocket, SOL_SOCKET, SO_BROADCAST | SO_REUSEADDR, &broadcast, sizeof(broadcast));
+    int setBroadcast = setsockopt(clientSocket, SOL_SOCKET, SO_BROADCAST, &broadcast, sizeof(broadcast));
+    setsockopt(clientSocket, SOL_SOCKET, SO_REUSEADDR, &broadcast, sizeof(broadcast));
     if (setBroadcast < 0)
     {
         printErrorAndExit("ERROR: failed to set broadcast socket option");
     }
 
     // Construct bind structure
-    struct sockaddr_in broadcastAddr;                 // Broadcast Address
-    memset(&broadcastAddr, 0, sizeof(broadcastAddr)); // Zero out structure
-    broadcastAddr.sin_family = AF_INET;               // Internet address family
-    broadcastAddr.sin_addr.s_addr = INADDR_ANY;       // Any incoming interface
+    struct sockaddr_in broadcastAddr;                     // Broadcast Address
+    memset(&broadcastAddr, 0, sizeof(broadcastAddr));     // Zero out structure
+    broadcastAddr.sin_family = AF_INET;                   // Internet address family
+    broadcastAddr.sin_addr.s_addr = INADDR_ANY;           // Any incoming interface
     broadcastAddr.sin_port = htons(atoi(BROADCAST_PORT)); // Broadcast port
 
     // Bind to the broadcast port
@@ -82,10 +83,14 @@ void sendMessageToServer(int clientSocket, char *message, struct addrinfo *servA
     }
 }
 
-char *receiveMessageFromServer(int clientSocket)
+char *receiveMessageFromServer(int clientSocket, struct addrinfo *servAddr)
 {
     char buffer[MAXSTRINGLENGTH + 1]; // I/O buffer
-    ssize_t numBytes = recv(clientSocket, buffer, MAXSTRINGLENGTH, 0);
+
+    socklen_t servAddrLen = sizeof(&servAddr);
+    // Size of received message
+    ssize_t numBytes = recvfrom(clientSocket, buffer, MAXSTRINGLENGTH, 0,
+                                (struct sockaddr *)&servAddr, &servAddrLen);
     if (numBytes < 0)
     {
         printErrorAndExit("ERROR: recvfrom() failed");
@@ -110,6 +115,10 @@ void receiveMessageAndRespond(int serverSocket)
     {
         printErrorAndExit("ERROR: recvfrom failed");
     }
+
+    int connection_id = ((struct sockaddr_in *)&clntAddr)->sin_port;
+    char *ip = inet_ntoa(((struct sockaddr_in *)&clntAddr)->sin_addr);
+    printf("INFO: received request from %s:%d.\n", ip, connection_id);
 
     // Send received datagram back to the client
     ssize_t numBytesSent = sendto(serverSocket, buffer, MAXSTRINGLENGTH, 0,
@@ -175,8 +184,8 @@ void createAddress(int serverSocket, char *port)
     /* Construct local address structure */
     struct sockaddr_in server;          /* Broadcast address */
     memset(&server, 0, sizeof(server)); /* Zero out structure */
-    server.sin_family = AF_INET; /* Internet address family */
-    server.sin_port = serverPort;         /* Broadcast port */
+    server.sin_family = AF_INET;        /* Internet address family */
+    server.sin_port = serverPort;       /* Broadcast port */
     server.sin_addr.s_addr = INADDR_ANY;
 
     if (bind(serverSocket, (struct sockaddr *)&server, sizeof(server)) < 0)

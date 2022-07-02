@@ -13,7 +13,6 @@
 
 #include "utils.h"
 
-
 static const char *BROADCAST_PORT = "51512";
 
 int createUdpSocket();
@@ -24,7 +23,7 @@ void bindToBroadcasterServer(int clientSocket, char *serverPort);
 char *receiveBroadcastMessage(int clientSocket);
 struct addrinfo *getServerAddress(char *serverIpAddress, char *serverPort);
 void sendMessageToServer(int clientSocket, char *message, struct addrinfo *servAddr);
-char *receiveMessageFromServer(int clientSocket);
+char *receiveMessageFromServer(int clientSocket, struct addrinfo *servAddr);
 
 // SERVER FUNCTIONS
 void receiveMessageAndRespond(int serverSocket);
