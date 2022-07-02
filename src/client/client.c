@@ -1,15 +1,9 @@
-#include <sys/time.h>
-#include <sys/types.h>
-#include <unistd.h>
-
-#include <stdio.h>
-#include <string.h>
-
-#include <pthread.h>
-
 #include "utils.h"
 #include "protocol.h"
 #include "messaging.h"
+#include "threads.h"
+
+#include <pthread.h>
 
 #define STANDARD_INPUT 0 // File Descriptor - Standard input
 
@@ -35,13 +29,6 @@ void sendReqAdd(struct addrinfo *serverAddress, int clientSocket)
         printf("New ID: %s%i\n", zero, equipmentId);
     }
 }
-
-struct ThreadArgs
-{
-    struct addrinfo* serverAddress;
-    int clientUnicastSocket;
-    int clientBroadcastSocket;
-};
 
 int readFromStandardInput(char *message)
 {
@@ -69,7 +56,7 @@ int readFromStandardInput(char *message)
 }
 
 void *receiveUnicastThread(void *data) {
-    struct ThreadArgs *threadData = (struct ThreadArgs *)data;
+    struct ClientThreadArguments *threadData = (struct ClientThreadArguments *)data;
 
     while (1)
     {
@@ -82,7 +69,7 @@ void *receiveUnicastThread(void *data) {
 
 void *receiveBroadcastThread(void *data)
 {
-    struct ThreadArgs *threadData = (struct ThreadArgs *)data;
+    struct ClientThreadArguments *threadData = (struct ClientThreadArguments *)data;
 
     while (1)
     {
@@ -95,7 +82,7 @@ void *receiveBroadcastThread(void *data)
 
 void *sendUnicastThread(void *data)
 {
-    struct ThreadArgs *threadData = (struct ThreadArgs *)data;
+    struct ClientThreadArguments *threadData = (struct ClientThreadArguments *)data;
 
     while (1)
     {
@@ -126,50 +113,24 @@ int main(int argc, char *argv[])
     // CREATING SOCKETS
     //
     int clientUnicastSocket = createUdpSocket();
-
     int clientBroadcastSocket = createUdpSocket();
     bindToBroadcasterServer(clientBroadcastSocket, serverPort);
     //
     //
+    // GET SERVER ADDRESS
     //
-
     struct addrinfo *serverAddress = getServerAddress(serverIpAddress, serverPort);
-
-
     //
-    // PREPARING THREADS
     //
-    pthread_t unicastListenerThread, unicastSenderThread, broadcastListenerThread;
+    // THREADS
+    //
+    pthread_t unicastListenerThread = 0;
+    pthread_t unicastSenderThread = 0;
+    pthread_t broadcastListenerThread = 0;
 
-    struct ThreadArgs *unicastListenerThreadArgs = (struct ThreadArgs *)malloc(sizeof(struct ThreadArgs));
-    unicastListenerThreadArgs->clientUnicastSocket = clientUnicastSocket;
-    unicastListenerThreadArgs->clientBroadcastSocket = clientBroadcastSocket;
-    unicastListenerThreadArgs->serverAddress = serverAddress;
-    int unicastListenerThreadStatus = pthread_create(&unicastListenerThread, NULL, receiveUnicastThread, (void *)unicastListenerThreadArgs);
-    if (unicastListenerThreadStatus != 0)
-    {
-        printErrorAndExit("ERROR: failed to create unicastListenerThread");
-    }
-
-    struct ThreadArgs *unicastSenderThreadArgs = (struct ThreadArgs *)malloc(sizeof(struct ThreadArgs));
-    unicastSenderThreadArgs->clientUnicastSocket = clientUnicastSocket;
-    unicastSenderThreadArgs->clientBroadcastSocket = clientBroadcastSocket;
-    unicastSenderThreadArgs->serverAddress = serverAddress;
-    int unicastSenderThreadStatus = pthread_create(&unicastSenderThread, NULL, sendUnicastThread, (void *)unicastSenderThreadArgs);
-    if (unicastSenderThreadStatus != 0)
-    {
-        printErrorAndExit("ERROR: failed to create unicastSenderThread");
-    }
-    
-    struct ThreadArgs *broadcastListenetThreadArgs = (struct ThreadArgs *)malloc(sizeof(struct ThreadArgs));
-    broadcastListenetThreadArgs->clientUnicastSocket = clientUnicastSocket;
-    broadcastListenetThreadArgs->clientBroadcastSocket = clientBroadcastSocket;
-    broadcastListenetThreadArgs->serverAddress = serverAddress;
-    int broadcastListenetThreadStatus = pthread_create(&broadcastListenerThread, NULL, receiveBroadcastThread, (void *)broadcastListenetThreadArgs);
-    if (broadcastListenetThreadStatus != 0)
-    {
-        printErrorAndExit("ERROR: failed to create broadcastListenerThread");
-    }
+    createClientThread(&unicastListenerThread, clientUnicastSocket, clientBroadcastSocket, serverAddress, receiveUnicastThread);
+    createClientThread(&unicastSenderThread, clientUnicastSocket, clientBroadcastSocket, serverAddress, sendUnicastThread);
+    createClientThread(&broadcastListenerThread, clientUnicastSocket, clientBroadcastSocket, serverAddress, receiveBroadcastThread);
 
     pthread_join(unicastListenerThread, NULL);
     pthread_join(unicastSenderThread, NULL);

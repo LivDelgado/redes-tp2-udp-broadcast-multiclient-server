@@ -38,19 +38,20 @@ void bindToBroadcasterServer(int clientSocket, char *serverPort)
 
 char *receiveBroadcastMessage(int clientSocket)
 {
-    /* Receive a single datagram from the server */
-    char recvString[MAXSTRINGLENGTH + 1]; /* Buffer for received string */
-    int recvStringLen = recvfrom(clientSocket, recvString, MAXSTRINGLENGTH, 0, NULL, 0);
+    char messageReceived[MAXSTRINGLENGTH + 1]; // Buffer for received string
+    memset(messageReceived, 0, sizeof(messageReceived));
+
+    int recvStringLen = recvfrom(clientSocket, messageReceived, MAXSTRINGLENGTH, 0, NULL, 0);
     if (recvStringLen < 0)
     {
         printErrorAndExit("recvfrom() failed");
     }
 
     puts("INFO: received broadcast");
-    puts(recvString);
+    puts(messageReceived);
 
-    recvString[recvStringLen] = '\0';
-    char *output = recvString;
+    messageReceived[recvStringLen] = '\0';
+    char *output = messageReceived;
     return output;
 }
 
@@ -88,11 +89,11 @@ void sendMessageToServer(int clientSocket, char *message, struct addrinfo *servA
 
 char *receiveMessageFromServer(int clientSocket, struct addrinfo *servAddr)
 {
-    char buffer[MAXSTRINGLENGTH + 1]; // I/O buffer
+    char messageReceived[MAXSTRINGLENGTH + 1]; // I/O buffer
+    memset(messageReceived, 0, sizeof(messageReceived));
 
     socklen_t servAddrLen = sizeof(&servAddr);
-    // Size of received message
-    ssize_t numBytes = recvfrom(clientSocket, buffer, MAXSTRINGLENGTH, 0,
+    ssize_t numBytes = recvfrom(clientSocket, messageReceived, MAXSTRINGLENGTH, 0,
                                 (struct sockaddr *)&servAddr, &servAddrLen);
     if (numBytes < 0)
     {
@@ -100,9 +101,9 @@ char *receiveMessageFromServer(int clientSocket, struct addrinfo *servAddr)
     }
 
     puts("INFO: message received");
-    puts(buffer);
+    puts(messageReceived);
 
-    char *returnMessage = buffer;
+    char *returnMessage = messageReceived;
     return returnMessage;
 }
 
@@ -110,12 +111,12 @@ void receiveMessageAndRespond(int serverSocket)
 {
     struct sockaddr_storage clntAddr; // Client address
 
-    // Block until receive message from a client
-    char buffer[MAXSTRINGLENGTH]; // I/O buffer
+    char messageReceived[MAXSTRINGLENGTH]; // I/O buffer
+    memset(messageReceived, 0, sizeof(messageReceived));
 
     socklen_t clntAddrLen = sizeof(&clntAddr);
     // Size of received message
-    ssize_t numBytesRcvd = recvfrom(serverSocket, buffer, MAXSTRINGLENGTH, 0,
+    ssize_t numBytesRcvd = recvfrom(serverSocket, messageReceived, MAXSTRINGLENGTH, 0,
                                     (struct sockaddr *)&clntAddr, &clntAddrLen);
     if (numBytesRcvd < 0)
     {
@@ -127,7 +128,7 @@ void receiveMessageAndRespond(int serverSocket)
     printf("INFO: received request from %s:%d.\n", ip, connection_id);
 
     // Send received datagram back to the client
-    ssize_t numBytesSent = sendto(serverSocket, buffer, MAXSTRINGLENGTH, 0,
+    ssize_t numBytesSent = sendto(serverSocket, messageReceived, MAXSTRINGLENGTH, 0,
                                   (struct sockaddr *)&clntAddr, sizeof(clntAddr));
     if (numBytesSent < 0)
     {
