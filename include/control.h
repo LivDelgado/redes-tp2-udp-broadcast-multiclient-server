@@ -40,4 +40,7 @@ void removeConnection(int equipmentId);
 // get equipment id if we have connected it before. if not, return -1.
 int getEquipment(struct sockaddr_in equipmentAddress);
 
+// return string with ordered connected equipments
+char *listConnectedEquipmentsAsString();
+
 #endif

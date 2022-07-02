@@ -38,7 +38,12 @@ void *processMessageThread(void *args)
             sprintf(messageToSend, "03 %s%i ", zero, equipmentId);
             message = messageToSend;
             sendMessageTo(*(threadData->broadcastServerAddress), threadData->serverBroadcastSocket, message);
-            //sendMessage(message, threadData->serverUnicastSocket, &threadData->clientAddrIn, threadData->clientAddrLen);
+
+            char reslistOutput[MAXSTRINGLENGTH] = "";
+            strcat(reslistOutput, "04");
+            strcat(reslistOutput, SPLITTER);
+            strcat(reslistOutput, listConnectedEquipmentsAsString());
+            sendMessage(reslistOutput, threadData->serverUnicastSocket, &threadData->clientAddrIn, threadData->clientAddrLen);
         }
     }
 

@@ -5,8 +5,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-static const char *SPLITTER = " ";
-
 struct MessageFields existingMessages[EXISTING_MESSAGES] = {
     {0, 0, 0}, // REQ_ADD
     {1, 0, 0}, // REQ_REM
