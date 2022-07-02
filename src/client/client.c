@@ -6,28 +6,19 @@
 #include <pthread.h>
 
 #define STANDARD_INPUT 0 // File Descriptor - Standard input
+#define MAX_EQUIPMENTS 15 // maximum number of connected equipments
+
+typedef struct {
+    int equipmentId;
+    int listOfEquipments[MAX_EQUIPMENTS]; // works like a boolean, 0 does not exist, 1 exists
+} Equipment;
+
+Equipment self;
 
 void sendReqAdd(struct addrinfo *serverAddress, int clientSocket)
 {
     char *reqAddMessage = "01";
     sendMessageToServer(clientSocket, reqAddMessage, serverAddress);
-    struct Message response = structureMessage(receiveMessageFromServer(clientSocket, serverAddress));
-
-    if (isErrorMessage(response))
-    {
-        printErrorAndExit(getErrorMessage(response));
-    }
-    else
-    {
-        int equipmentId = atoi(response.payload);
-
-        char *zero = "";
-        if (equipmentId < 10)
-        {
-            zero = "0";
-        }
-        printf("New ID: %s%i\n", zero, equipmentId);
-    }
 }
 
 int readFromStandardInput(char *message)
@@ -55,12 +46,81 @@ int readFromStandardInput(char *message)
     return 0;
 }
 
-void *receiveUnicastThread(void *data) {
+void processResAdd(struct Message message)
+{
+    int equipmentId = atoi(message.payload);
+    int equipmentIdOnArray = equipmentId - 1;
+
+    char *zero = "";
+    if (equipmentId < 10)
+    {
+        zero = "0";
+    }
+
+    // register new equipment on the list
+    self.listOfEquipments[equipmentIdOnArray] = 1;
+
+    if (self.equipmentId == 0) // it means that this equipment hasn't connected yet, then it should register things!
+    {
+        self.equipmentId = equipmentId;
+        printf("New ID: %s%i\n", zero, equipmentId);
+    }
+    else { // equipment is already connected
+        printf("Equipment %s%i added\n", zero, equipmentId);
+    }
+    
+}
+
+void processResList(struct Message message)
+{
+    char payload[MAXSTRINGLENGTH];
+    strcpy(payload, message.payload); // copy to avoid changing the payload
+
+    char *word = strtok(payload, SPLITTER);
+    while (word != NULL)
+    {
+        int equipmentId = atoi(word);
+        int equipmentIdOnArray = equipmentId - 1;
+        self.listOfEquipments[equipmentIdOnArray] = 1;
+        word = strtok(NULL, " "); // takes next word
+    }
+
+    memset(payload, 0, sizeof(payload));
+}
+
+
+void processMessage(char *message)
+{
+    struct Message response = structureMessage(message);
+
+    if (isErrorMessage(response))
+    {
+        printErrorAndExit(getErrorMessage(response));
+    }
+    else
+    {
+        MessageType messageType = (MessageType)response.messageId;
+        switch (messageType)
+        {
+        case RES_ADD:
+            processResAdd(response);
+            break;
+        case RES_LIST:
+            processResList(response);
+            break;
+        default:
+            break;
+        }
+    }
+}
+
+void *receiveUnicastThread(void *data)
+{
     struct ClientThreadArguments *threadData = (struct ClientThreadArguments *)data;
 
     while (1)
     {
-        receiveMessageFromServer(threadData->clientUnicastSocket, threadData->serverAddress);
+        processMessage(receiveMessageFromServer(threadData->clientUnicastSocket, threadData->serverAddress));
     }
 
     free(threadData);
@@ -73,7 +133,7 @@ void *receiveBroadcastThread(void *data)
 
     while (1)
     {
-        puts(receiveBroadcastMessage(threadData->clientBroadcastSocket));
+        processMessage(receiveBroadcastMessage(threadData->clientBroadcastSocket));
     }
 
     free(threadData);
@@ -89,7 +149,8 @@ void *sendUnicastThread(void *data)
         char messageFromTerminal[MAXSTRINGLENGTH];
         memset(messageFromTerminal, 0, sizeof(messageFromTerminal));
 
-        if (readFromStandardInput(messageFromTerminal)) {
+        if (readFromStandardInput(messageFromTerminal))
+        {
             puts("INFO: sending message received from terminal");
             sendMessageToServer(threadData->clientUnicastSocket, messageFromTerminal, threadData->serverAddress);
         }
@@ -121,6 +182,16 @@ int main(int argc, char *argv[])
     //
     struct addrinfo *serverAddress = getServerAddress(serverIpAddress, serverPort);
     //
+
+    // send first connection message
+    puts("INFO: connecting to the server...");
+    self.equipmentId = 0;
+    for (int i=0; i < MAX_EQUIPMENTS; i++)
+    {
+        self.listOfEquipments[i] = 0;
+    }
+    sendReqAdd(serverAddress, clientUnicastSocket);
+
     //
     // THREADS
     //
@@ -135,13 +206,6 @@ int main(int argc, char *argv[])
     pthread_join(unicastListenerThread, NULL);
     pthread_join(unicastSenderThread, NULL);
     pthread_join(broadcastListenerThread, NULL);
-
-    //
-    //
-    //
-
-    // send first connection message
-    // sendReqAdd(serverAddress, clientUnicastSocket);
 
     /*
     //

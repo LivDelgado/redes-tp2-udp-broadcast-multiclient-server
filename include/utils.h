@@ -6,6 +6,7 @@
 #include <string.h>
 
 #define MAXSTRINGLENGTH 130
+static const char *SPLITTER = " ";
 
 void printErrorAndExit(char *errorMessage);
 

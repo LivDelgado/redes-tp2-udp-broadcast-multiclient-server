@@ -31,7 +31,7 @@ messaging.o:  src/common/messaging.c include/messaging.h include/utils.h
 	@mkdir -p obj
 	$(CC) $(CFLAGS) $(INCLUDE_FLAGS) -c src/common/messaging.c -o obj/messaging.o
 
-control.o:  src/server/control.c include/control.h
+control.o:  src/server/control.c include/control.h include/utils.h
 	@mkdir -p obj
 	$(CC) $(CFLAGS) $(INCLUDE_FLAGS) -c src/server/control.c -o obj/control.o
 

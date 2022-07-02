@@ -6,38 +6,12 @@
 
 #include <pthread.h>
 
-void *receiveUnicastThread(void *args)
+void *processMessageThread(void *args)
 {
     struct ServerThreadArguments *threadData = (struct ServerThreadArguments *)args;
 
-    int connection_id = threadData->clientAddrIn.sin_port;
-    struct sockaddr_in from = threadData->clientAddrIn;
-    char *ip = inet_ntoa(from.sin_addr);
-    printf("INFO: created new thread to handle client request %s:%d.\n", ip, connection_id);
-
-    while (1)
-    {
-        receiveMessage(threadData->serverUnicastSocket, threadData->buffer, &threadData->clientAddrIn, threadData->clientAddrLen);
-        puts("received message!");
-        puts(threadData->buffer);
-        memset(threadData->buffer, 0, sizeof(threadData->buffer));
-    }
-    
-    free(threadData);
-    pthread_exit(NULL);
-}
-
-void *sendUnicastThread(void *args)
-{
-    struct ServerThreadArguments *threadData = (struct ServerThreadArguments *)args;
-
-    int connection_id = threadData->clientAddrIn.sin_port;
-    struct sockaddr_in from = threadData->clientAddrIn;
-    char *ip = inet_ntoa(from.sin_addr);
-    printf("INFO: created new thread to handle client request %s:%d.\n", ip, connection_id);
-
-    /*
     char *message = "";
+    struct sockaddr_in from = threadData->clientAddrIn;
 
     if (getEquipment(from) < 0) // equipment is not connected, will try to connect!
     {
@@ -60,9 +34,55 @@ void *sendUnicastThread(void *args)
             memset(messageToSend, 0, sizeof(messageToSend));
             sprintf(messageToSend, "03 %s%i ", zero, equipmentId);
             message = messageToSend;
+            sendMessageTo(*(threadData->broadcastServerAddress), threadData->serverBroadcastSocket, message);
+
+            char reslistOutput[MAXSTRINGLENGTH] = "";
+            strcat(reslistOutput, "04");
+            strcat(reslistOutput, SPLITTER);
+            strcat(reslistOutput, listConnectedEquipmentsAsString());
+            sendMessage(reslistOutput, threadData->serverUnicastSocket, &threadData->clientAddrIn, threadData->clientAddrLen);
         }
     }
-    */
+
+    free(threadData);
+    pthread_exit(NULL);
+}
+
+void *receiveUnicastThread(void *args)
+{
+    struct ServerThreadArguments *threadData = (struct ServerThreadArguments *)args;
+
+    int connection_id = threadData->clientAddrIn.sin_port;
+    struct sockaddr_in from = threadData->clientAddrIn;
+    char *ip = inet_ntoa(from.sin_addr);
+    printf("INFO: created new thread to handle client request %s:%d.\n", ip, connection_id);
+
+    while (1)
+    {
+        receiveMessage(threadData->serverUnicastSocket, threadData->buffer, &threadData->clientAddrIn, threadData->clientAddrLen);
+
+        struct ServerThreadArguments *newThreadArgs = (struct ServerThreadArguments *)malloc(sizeof(struct ServerThreadArguments));
+        *newThreadArgs = *threadData;
+
+        pthread_t processorThread = 0;
+        createServerThreadBasedOnExistingThread(&processorThread, newThreadArgs, processMessageThread);
+        pthread_join(processorThread, NULL);
+
+        memset(threadData->buffer, 0, sizeof(threadData->buffer));
+    }
+    
+    free(threadData);
+    pthread_exit(NULL);
+}
+
+void *sendUnicastThread(void *args)
+{
+    struct ServerThreadArguments *threadData = (struct ServerThreadArguments *)args;
+
+    int connection_id = threadData->clientAddrIn.sin_port;
+    struct sockaddr_in from = threadData->clientAddrIn;
+    char *ip = inet_ntoa(from.sin_addr);
+    printf("INFO: created new thread to handle client request %s:%d.\n", ip, connection_id);
 
     // sendMessage(threadData->buffer, threadData->serverUnicastSocket, &threadData->clientAddrIn, threadData->clientAddrLen);
 
@@ -79,7 +99,6 @@ void *sendBroadcastThread(void *args)
     while (1)
     {
         sendMessageTo(*(threadData->broadcastServerAddress), threadData->serverBroadcastSocket, sendString);
-        puts("sent! waiting 5");
         sleep(5);
     }
 
@@ -124,13 +143,15 @@ int main(int argc, char *argv[])
     //
     // Start multithreading server!
     //
-    pthread_t unicastListenerThread = 0, unicastSenderThread = 0, broadcastSenderThread = 0;
+    pthread_t unicastListenerThread = 0;
+    pthread_t unicastSenderThread = 0;
+    //pthread_t broadcastSenderThread = 0;
 
     createServerThread(&unicastListenerThread, serverUnicastSocket, serverBroadcastSocket, &broadcastServerAddress, receiveUnicastThread);
     createServerThread(&unicastSenderThread, serverUnicastSocket, serverBroadcastSocket, &broadcastServerAddress, sendUnicastThread);
-    createServerThread(&broadcastSenderThread, serverUnicastSocket, serverBroadcastSocket, &broadcastServerAddress, sendBroadcastThread);
+    //createServerThread(&broadcastSenderThread, serverUnicastSocket, serverBroadcastSocket, &broadcastServerAddress, sendBroadcastThread);
 
     pthread_join(unicastListenerThread, NULL);
     // pthread_join(unicastSenderThread, NULL);
-    pthread_join(broadcastSenderThread, NULL);
+    // pthread_join(broadcastSenderThread, NULL);
 }

@@ -40,6 +40,11 @@ void createServerThread(
     struct sockaddr_in *broadcastServerAddress,
     void *(*threadFunction)(void *));
 
+void createServerThreadBasedOnExistingThread(
+    pthread_t *newServerThread,
+    struct ServerThreadArguments *threadArguments,
+    void *(*threadFunction)(void *));
+
 void createClientThread(
     pthread_t *newClientThread,
     int clientUnicastSocket,

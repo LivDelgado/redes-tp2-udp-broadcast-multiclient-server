@@ -22,6 +22,16 @@ struct Message
     char *payload;
 };
 
+typedef enum {
+    REQ_ADD = 1,
+    REQ_REM,
+    RES_ADD,
+    RES_LIST,
+    REQ_INF,
+    RES_INF,
+    ERROR,
+    OK
+} MessageType;
 
 struct Message structureMessage(char *originalMessage);
 struct MessageFields *initializeMessageFields();

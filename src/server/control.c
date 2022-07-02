@@ -1,4 +1,5 @@
 #include "control.h"
+#include "utils.h"
 
 int connectedEquipments[MAX_EQUIPMENTS] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
@@ -90,4 +91,31 @@ int getEquipment(struct sockaddr_in equipmentAddress)
     }
 
     return equipmentId;
+}
+
+char *listConnectedEquipmentsAsString()
+{
+    char equipmentString[5] = "";
+    char output[MAXSTRINGLENGTH] = "";
+
+    for (int i = 0; i < MAX_EQUIPMENTS; i++)
+    {
+        if (i > 0) {
+            strcat(output, SPLITTER);
+        }
+        if (connectedEquipments[i] == 1)
+        {
+            int equipmentId = i + 1;
+            char *zero = "";
+            if (equipmentId < 10)
+            {
+                zero = "0";
+            }
+            sprintf(equipmentString, "%s%i", zero, equipmentId);
+            strcat(output, equipmentString);
+        }
+    }
+
+    char *connectedEquipmentsString = output;
+    return connectedEquipmentsString;
 }
