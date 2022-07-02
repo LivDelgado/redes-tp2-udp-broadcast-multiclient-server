@@ -32,6 +32,7 @@ void *ThreadMain(void *args)
     char *ip = inet_ntoa(from.sin_addr);
     printf("INFO: created new thread to handle client request %s:%d.\n", ip, connection_id);
 
+    /*
     char *message = "";
 
     if (getEquipment(from) < 0) // equipment is not connected, will try to connect!
@@ -56,8 +57,9 @@ void *ThreadMain(void *args)
             message = messageToSend;
         }
     }
+    */
 
-    sendMessage(message, threadArgs->serverUnicastSocket, &threadArgs->clientAddrIn, threadArgs->clientAddrLen);
+    sendMessage(threadArgs->buffer, threadArgs->serverUnicastSocket, &threadArgs->clientAddrIn, threadArgs->clientAddrLen);
 
     free(threadArgs);
     numberOfThreads--;
@@ -137,7 +139,6 @@ int main(int argc, char *argv[])
     puts("received and responded");
     */
 
-    /*
     //
     // BROADCAST
     //
@@ -151,5 +152,4 @@ int main(int argc, char *argv[])
     }
     //
     //
-    */
 }

@@ -30,7 +30,7 @@ void receiveMessageAndRespond(int serverSocket);
 char *receiveMessage(int serverSocket, char *buffer, struct sockaddr_in *clientAddrIn, socklen_t clientAddrLen);
 void sendMessage(char *response, int serverSocket, struct sockaddr_in *clientAddrIn, socklen_t clientAddrLen);
 
-struct sockaddr_in createBroadcastAddress(char *port);
+struct sockaddr_in createBroadcastAddress(const char *port);
 void createAddress(int serverSocket, char *port);
 void sendMessageTo(struct sockaddr_in serverAddress, int serverSocket, char *message);
 

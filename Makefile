@@ -7,11 +7,11 @@ default: equipment server
 
 ## COMPILING THE CLIENT
 equipment:  client.o protocol.o utils.o messaging.o
-	$(CC) $(CFLAGS) -o equipment obj/client.o obj/protocol.o obj/utils.o obj/messaging.o
+	$(CC) $(CFLAGS) -pthread -o equipment obj/client.o obj/protocol.o obj/utils.o obj/messaging.o
 
 client.o:  src/client/client.c include/protocol.h include/utils.h include/messaging.h
 	@mkdir -p obj
-	$(CC) $(CFLAGS) $(INCLUDE_FLAGS) -pthread -c src/client/client.c -o obj/client.o
+	$(CC) $(CFLAGS) $(INCLUDE_FLAGS) -c src/client/client.c -o obj/client.o
 
 ## COMPILING THE SERVER
 server:  server.o protocol.o utils.o messaging.o control.o

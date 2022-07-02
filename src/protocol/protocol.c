@@ -96,6 +96,9 @@ char *receiveMessageFromServer(int clientSocket, struct addrinfo *servAddr)
         printErrorAndExit("ERROR: recvfrom() failed");
     }
 
+    puts("INFO: message received");
+    puts(buffer);
+
     char *returnMessage = buffer;
     return returnMessage;
 }
@@ -163,7 +166,7 @@ void setSocketPermissionToBroadcast(int serverSocket)
     }
 }
 
-struct sockaddr_in createBroadcastAddress(char *port)
+struct sockaddr_in createBroadcastAddress(const char *port)
 {
     in_port_t serverPort = htons((in_port_t)atoi(port));
 
