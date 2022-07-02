@@ -8,7 +8,9 @@ void sendReqAdd(struct addrinfo *serverAddress, int clientSocket)
 {
     char *reqAddMessage = "01";
     sendMessageToServer(clientSocket, reqAddMessage, serverAddress);
-    struct Message response = structureMessage(receiveMessageFromServer(clientSocket));
+    char *strResponse = receiveMessageFromServer(clientSocket, serverAddress);
+    puts(strResponse);
+    struct Message response = structureMessage(strResponse);
 
     if (isErrorMessage(response)) {
         printErrorAndExit(getErrorMessage(response));
@@ -34,31 +36,36 @@ int main(int argc, char *argv[])
     char *serverIpAddress = argv[1]; // first argument is server address
     char *serverPort = argv[2];      // second argument is server port
 
-    int clientSocket = createUdpSocket();
-    bindToBroadcasterServer(clientSocket, serverPort);
+    int clientUnicastSocket = createUdpSocket();
+    int clientBroadcastSocket = createUdpSocket();
+    bindToBroadcasterServer(clientBroadcastSocket, serverPort);
     struct addrinfo *serverAddress = getServerAddress(serverIpAddress, serverPort);
 
     // send first connection message
-    //sendReqAdd(serverAddress, clientSocket);
+    sendReqAdd(serverAddress, clientUnicastSocket);
 
     /*
     //
     // UNICAST
     //
-    char *echoString = NULL; // create new message
-    size_t echoStringLen;
+    while(1) 
+    {
+        char *echoString = NULL; // create new message
+        size_t echoStringLen;
 
-    getline(&echoString, &echoStringLen, stdin); // get the message from user input
-    sendMessageToServer(clientSocket, echoString, serverAddress);
-    puts("sent message");
-    puts(receiveMessageFromServer(clientSocket));
-    puts("received response");
+        getline(&echoString, &echoStringLen, stdin); // get the message from user input
+        sendMessageToServer(clientUnicastSocket, echoString, serverAddress);
+        puts("sent message");
+        puts(receiveMessageFromServer(clientUnicastSocket));
+        puts("received response");
+    }
     //
     //
     //
     */
 
 
+    /*
     while (1)
     {
         //
@@ -68,6 +75,6 @@ int main(int argc, char *argv[])
         //
         //
         //
-
     }
+    */
 }

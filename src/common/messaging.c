@@ -26,8 +26,6 @@ struct Message structureMessage(char *originalMessage)
     struct Message structuredMessage = {0, 0, 0, NULL};
     int counter = 0;
 
-    char payload[MAXSTRINGLENGTH] = "";
-
     // first word is the id - it exists for every message
     char *word = strtok(message, SPLITTER);
     if (word == NULL)
@@ -44,6 +42,7 @@ struct Message structureMessage(char *originalMessage)
     counter++;
 
     struct MessageFields *fields = &existingMessages[structuredMessage.messageId - 1];
+    char payload[MAXSTRINGLENGTH] = "";
 
     while (word != NULL)
     {

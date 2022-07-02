@@ -100,7 +100,6 @@ int main(int argc, char *argv[])
     int serverUnicastSocket = createUdpSocket();
     setSocketPermissionToBroadcast(serverBroadcastSocket);
 
-    /*
     //
     // THREADS
     //
@@ -121,24 +120,24 @@ int main(int argc, char *argv[])
     //
     //
     //
+
+    /*
+    //
+    // UNICAST
+    //
+    createAddress(serverUnicastSocket, port);
+    while (1)
+    {
+        puts("receiving message");
+        receiveMessageAndRespond(serverUnicastSocket);
+    }
+    //
+    //
+    //
+    puts("received and responded");
     */
 
     /*
-   //
-   // UNICAST
-   //
-   createAddress(serverUnicastSocket, port);
-   //    while (1)
-   //    {
-   puts("receiving message");
-   receiveMessageAndRespond(serverUnicastSocket);
-   //    }
-   //
-   //
-   //
-   puts("received and responded");
-   */
-
     //
     // BROADCAST
     //
@@ -152,4 +151,5 @@ int main(int argc, char *argv[])
     }
     //
     //
+    */
 }
