@@ -5,10 +5,11 @@
 
 #include <pthread.h>
 
-#define STANDARD_INPUT 0 // File Descriptor - Standard input
+#define STANDARD_INPUT 0  // File Descriptor - Standard input
 #define MAX_EQUIPMENTS 15 // maximum number of connected equipments
 
-typedef struct {
+typedef struct
+{
     int equipmentId;
     int listOfEquipments[MAX_EQUIPMENTS]; // works like a boolean, 0 does not exist, 1 exists
 } Equipment;
@@ -65,10 +66,10 @@ void processResAdd(struct Message message)
         self.equipmentId = equipmentId;
         printf("New ID: %s%i\n", zero, equipmentId);
     }
-    else { // equipment is already connected
+    else
+    { // equipment is already connected
         printf("Equipment %s%i added\n", zero, equipmentId);
     }
-    
 }
 
 void processResList(struct Message message)
@@ -88,6 +89,28 @@ void processResList(struct Message message)
     memset(payload, 0, sizeof(payload));
 }
 
+void processReqRem(struct Message message)
+{
+    int equipmentIdOnArray = message.sourceId - 1;
+    self.listOfEquipments[equipmentIdOnArray] = 0;
+    if (message.sourceId != self.equipmentId)
+    {
+        char *zero = "";
+        if (message.sourceId < 10)
+        {
+            zero = "0";
+        }
+        printf("Equipment %s%i removed\n", zero, message.sourceId);
+    }
+}
+
+void processOk(struct Message message)
+{
+    if (message.destineId == self.equipmentId)
+    {
+        puts("Successful removal");
+    }
+}
 
 void processMessage(char *message)
 {
@@ -95,7 +118,7 @@ void processMessage(char *message)
 
     if (isErrorMessage(response))
     {
-        printErrorAndExit(getErrorMessage(response));
+        puts(getErrorMessage(response));
     }
     else
     {
@@ -107,6 +130,12 @@ void processMessage(char *message)
             break;
         case RES_LIST:
             processResList(response);
+            break;
+        case REQ_REM:
+            processReqRem(response);
+            break;
+        case OK:
+            processOk(response);
             break;
         default:
             break;
@@ -151,8 +180,15 @@ void *sendUnicastThread(void *data)
 
         if (readFromStandardInput(messageFromTerminal))
         {
-            puts("INFO: sending message received from terminal");
-            sendMessageToServer(threadData->clientUnicastSocket, messageFromTerminal, threadData->serverAddress);
+            if (strncmp(messageFromTerminal, "close connection", strlen(messageFromTerminal) - 1) == 0)
+            {
+                if (self.equipmentId > 0)
+                    sendMessageToServer(threadData->clientUnicastSocket, constructMessageWithTwoFields(2, self.equipmentId), threadData->serverAddress);
+            }
+            else
+            {
+                puts("command not recognized!");
+            }
         }
     }
 
@@ -186,7 +222,7 @@ int main(int argc, char *argv[])
     // send first connection message
     puts("INFO: connecting to the server...");
     self.equipmentId = 0;
-    for (int i=0; i < MAX_EQUIPMENTS; i++)
+    for (int i = 0; i < MAX_EQUIPMENTS; i++)
     {
         self.listOfEquipments[i] = 0;
     }
@@ -206,37 +242,4 @@ int main(int argc, char *argv[])
     pthread_join(unicastListenerThread, NULL);
     pthread_join(unicastSenderThread, NULL);
     pthread_join(broadcastListenerThread, NULL);
-
-    /*
-    //
-    // UNICAST
-    //
-    while(1)
-    {
-        char *echoString = NULL; // create new message
-        size_t echoStringLen;
-
-        getline(&echoString, &echoStringLen, stdin); // get the message from user input
-        sendMessageToServer(clientUnicastSocket, echoString, serverAddress);
-        puts("sent message");
-        puts(receiveMessageFromServer(clientUnicastSocket));
-        puts("received response");
-    }
-    //
-    //
-    //
-    */
-
-    /*
-    while (1)
-    {
-        //
-        // BROADCAST
-        //
-        puts(receiveBroadcastMessage(clientSocket));
-        //
-        //
-        //
-    }
-    */
 }

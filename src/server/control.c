@@ -93,6 +93,19 @@ int getEquipment(struct sockaddr_in equipmentAddress)
     return equipmentId;
 }
 
+int getEquipmentById(int equipmentId)
+{
+    if (equipmentId <=0 || equipmentId > MAX_EQUIPMENTS)
+        return -1;
+
+    int equipmentIdOnArray = equipmentId - 1;
+    if (connectedEquipments[equipmentIdOnArray] == 1) {
+        return equipmentId;
+    } else {
+        return -1;
+    }
+}
+
 char *listConnectedEquipmentsAsString()
 {
     char equipmentString[5] = "";

@@ -6,42 +6,84 @@
 
 #include <pthread.h>
 
+void processNewConnection(struct ServerThreadArguments *threadData)
+{
+    int equipmentId = newConnection(threadData->clientAddrIn);
+
+    char *zero = "";
+    if (equipmentId < 10)
+    {
+        zero = "0";
+    }
+    printf("Equipment %s%i added\n", zero, equipmentId);
+
+    sendMessageTo(*(threadData->broadcastServerAddress), threadData->serverBroadcastSocket, constructMessageWithTwoFields(3, equipmentId));
+
+    char reslistOutput[MAXSTRINGLENGTH] = "";
+    strcat(reslistOutput, "04");
+    strcat(reslistOutput, SPLITTER);
+    strcat(reslistOutput, listConnectedEquipmentsAsString());
+    sendMessage(reslistOutput, threadData->serverUnicastSocket, &threadData->clientAddrIn, threadData->clientAddrLen);
+}
+
+void processReqAdd(struct ServerThreadArguments *threadData, struct Message message)
+{
+    if (getEquipment(threadData->clientAddrIn) < 0) // equipment is not connected, will try to connect!
+    {
+        if (alreadyReachedMaxNumberOfConnections())
+        {
+            sendMessage(constructMessageWithThreeFields(7, 0, 4), threadData->serverUnicastSocket, &threadData->clientAddrIn, threadData->clientAddrLen);
+        }
+        else
+        {
+            processNewConnection(threadData);
+        }
+    }
+}
+
+void processReqRem(struct ServerThreadArguments *threadData, struct Message message)
+{
+    if (getEquipmentById(message.sourceId) < 0)
+    { // check if equipment exists
+        sendMessage(
+            constructMessageWithThreeFields(7, message.sourceId, 1),
+            threadData->serverUnicastSocket, &threadData->clientAddrIn, threadData->clientAddrLen);
+    }
+    else
+    {
+        removeConnection(message.sourceId);
+
+        char *zero = "";
+        if (message.sourceId < 10)
+        {
+            zero = "0";
+        }
+        printf("Equipment %s%i removed\n", zero, message.sourceId);
+
+        // send ok message
+        sendMessage(constructMessageWithThreeFields(8, message.sourceId, 1), threadData->serverUnicastSocket, &threadData->clientAddrIn, threadData->clientAddrLen);
+
+        // broadcast equipment removed message
+        sendMessageTo(*(threadData->broadcastServerAddress), threadData->serverBroadcastSocket, threadData->buffer);
+    }
+}
+
 void *processMessageThread(void *args)
 {
     struct ServerThreadArguments *threadData = (struct ServerThreadArguments *)args;
 
-    char *message = "";
-    struct sockaddr_in from = threadData->clientAddrIn;
-
-    if (getEquipment(from) < 0) // equipment is not connected, will try to connect!
+    struct Message messageReceived = structureMessage(threadData->buffer);
+    MessageType messageType = (MessageType)messageReceived.messageId;
+    switch (messageType)
     {
-        if (alreadyReachedMaxNumberOfConnections())
-        {
-            message = "07 00 04";
-        }
-        else
-        {
-            int equipmentId = newConnection(from);
-
-            char *zero = "";
-            if (equipmentId < 10)
-            {
-                zero = "0";
-            }
-            printf("Equipment %s%i added\n", zero, equipmentId);
-
-            char messageToSend[MAXSTRINGLENGTH];
-            memset(messageToSend, 0, sizeof(messageToSend));
-            sprintf(messageToSend, "03 %s%i ", zero, equipmentId);
-            message = messageToSend;
-            sendMessageTo(*(threadData->broadcastServerAddress), threadData->serverBroadcastSocket, message);
-
-            char reslistOutput[MAXSTRINGLENGTH] = "";
-            strcat(reslistOutput, "04");
-            strcat(reslistOutput, SPLITTER);
-            strcat(reslistOutput, listConnectedEquipmentsAsString());
-            sendMessage(reslistOutput, threadData->serverUnicastSocket, &threadData->clientAddrIn, threadData->clientAddrLen);
-        }
+    case REQ_ADD:
+        processReqAdd(threadData, messageReceived);
+        break;
+    case REQ_REM:
+        processReqRem(threadData, messageReceived);
+        break;
+    default:
+        break;
     }
 
     free(threadData);
@@ -70,7 +112,7 @@ void *receiveUnicastThread(void *args)
 
         memset(threadData->buffer, 0, sizeof(threadData->buffer));
     }
-    
+
     free(threadData);
     pthread_exit(NULL);
 }
@@ -145,11 +187,11 @@ int main(int argc, char *argv[])
     //
     pthread_t unicastListenerThread = 0;
     pthread_t unicastSenderThread = 0;
-    //pthread_t broadcastSenderThread = 0;
+    // pthread_t broadcastSenderThread = 0;
 
     createServerThread(&unicastListenerThread, serverUnicastSocket, serverBroadcastSocket, &broadcastServerAddress, receiveUnicastThread);
     createServerThread(&unicastSenderThread, serverUnicastSocket, serverBroadcastSocket, &broadcastServerAddress, sendUnicastThread);
-    //createServerThread(&broadcastSenderThread, serverUnicastSocket, serverBroadcastSocket, &broadcastServerAddress, sendBroadcastThread);
+    // createServerThread(&broadcastSenderThread, serverUnicastSocket, serverBroadcastSocket, &broadcastServerAddress, sendBroadcastThread);
 
     pthread_join(unicastListenerThread, NULL);
     // pthread_join(unicastSenderThread, NULL);
