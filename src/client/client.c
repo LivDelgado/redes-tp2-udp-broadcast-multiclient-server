@@ -1,15 +1,9 @@
-#include <sys/time.h>
-#include <sys/types.h>
-#include <unistd.h>
-
-#include <stdio.h>
-#include <string.h>
-
-#include <pthread.h>
-
 #include "utils.h"
 #include "protocol.h"
 #include "messaging.h"
+#include "threads.h"
+
+#include <pthread.h>
 
 #define STANDARD_INPUT 0 // File Descriptor - Standard input
 
@@ -36,13 +30,6 @@ void sendReqAdd(struct addrinfo *serverAddress, int clientSocket)
     }
 }
 
-struct ClientThreadArguments
-{
-    struct addrinfo* serverAddress;
-    int clientUnicastSocket;
-    int clientBroadcastSocket;
-};
-
 int readFromStandardInput(char *message)
 {
     struct timeval timeInterval;
@@ -66,21 +53,6 @@ int readFromStandardInput(char *message)
     }
 
     return 0;
-}
-
-void createClientThread(pthread_t *newClientThread, int clientUnicastSocket, int clientBroadcastSocket, struct addrinfo *serverAddress, void *(*threadFunction) (void *))
-{
-    struct ClientThreadArguments *clientThreadArgs = (struct ClientThreadArguments *)malloc(sizeof(struct ClientThreadArguments));
-    clientThreadArgs->clientUnicastSocket = clientUnicastSocket;
-    clientThreadArgs->clientBroadcastSocket = clientBroadcastSocket;
-    clientThreadArgs->serverAddress = serverAddress;
-
-    int clientThreadStatus = pthread_create(newClientThread, NULL, threadFunction, (void *)clientThreadArgs);
-    if (clientThreadStatus != 0)
-    {
-        printErrorAndExit("ERROR: failed to create client thread");
-    }
-
 }
 
 void *receiveUnicastThread(void *data) {

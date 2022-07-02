@@ -1,28 +1,8 @@
-#include <time.h>
-#include <pthread.h>
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
 #include "utils.h"
 #include "protocol.h"
 #include "messaging.h"
 #include "control.h"
-
-#define MAXTHREADS 15
-
-int numberOfThreads = 0;
-
-struct ServerThreadArguments
-{
-    int serverBroadcastSocket;
-    int serverUnicastSocket;
-    struct sockaddr_in *broadcastServerAddress;
-    struct sockaddr_in clientAddrIn;
-    socklen_t clientAddrLen;
-    char buffer[MAXSTRINGLENGTH];
-};
+#include "threads.h"
 
 void *receiveUnicastThread(void *args)
 {
@@ -83,7 +63,6 @@ void *sendUnicastThread(void *args)
     // sendMessage(threadArgs->buffer, threadArgs->serverUnicastSocket, &threadArgs->clientAddrIn, threadArgs->clientAddrLen);
 
     free(threadArgs);
-    numberOfThreads--;
     return NULL;
 }
 
@@ -101,26 +80,6 @@ void *sendBroadcastThread(void *args)
 
     free(threadData);
     pthread_exit(NULL);
-}
-
-void createServerThread(
-    pthread_t *newServerThread,
-    int serverUnicastSocket,
-    int serverBroadcastSocket,
-    struct sockaddr_in *broadcastServerAddress,
-    void *(*threadFunction)(void *))
-{
-    struct ServerThreadArguments *serverThreadArgs = (struct ServerThreadArguments *)malloc(sizeof(struct ServerThreadArguments));
-    serverThreadArgs->serverUnicastSocket = serverUnicastSocket;
-    serverThreadArgs->serverBroadcastSocket = serverBroadcastSocket;
-    serverThreadArgs->clientAddrLen = sizeof(struct sockaddr_in);
-    serverThreadArgs->broadcastServerAddress = broadcastServerAddress;
-
-    int serverThreadStatus = pthread_create(newServerThread, NULL, threadFunction, (void *)serverThreadArgs);
-    if (serverThreadStatus != 0)
-    {
-        printErrorAndExit("ERROR: failed to create server thread");
-    }
 }
 
 int main(int argc, char *argv[])
@@ -158,7 +117,7 @@ int main(int argc, char *argv[])
     //
 
     //
-    // THREADS
+    // Start multithreading server!
     //
     pthread_t unicastListenerThread = 0, unicastSenderThread = 0, broadcastSenderThread = 0;
 
@@ -169,39 +128,4 @@ int main(int argc, char *argv[])
     pthread_join(unicastListenerThread, NULL);
     // pthread_join(unicastSenderThread, NULL);
     pthread_join(broadcastSenderThread, NULL);
-
-    // receiveMessage(serverUnicastSocket, threadArgs->buffer, &threadArgs->clientAddrIn, threadArgs->clientAddrLen);
-    // createThreadToHandleReceivedMessage(threads, threadArgs);
-
-    /*
-    //
-    // UNICAST
-    //
-    createAddress(serverUnicastSocket, port);
-    while (1)
-    {
-        puts("receiving message");
-        receiveMessageAndRespond(serverUnicastSocket);
-    }
-    //
-    //
-    //
-    puts("received and responded");
-    */
-
-    /*
-    //
-    // BROADCAST
-    //
-    char *sendString = "teste";
-    struct sockaddr_in serverAddress = createBroadcastAddress(BROADCAST_PORT);
-    while (1)
-    {
-        sendMessageTo(serverAddress, serverBroadcastSocket, sendString);
-        puts("sent! waiting 5");
-        sleep(5);
-    }
-    //
-    //
-    */
 }
