@@ -38,29 +38,47 @@ int readFromStandardInput(char *message)
     return 0;
 }
 
+void processResAdd(struct Message message)
+{
+    int equipmentId = atoi(message.payload);
+
+    char *zero = "";
+    if (equipmentId < 10)
+    {
+        zero = "0";
+    }
+    printf("New ID: %s%i\n", zero, equipmentId);
+}
+
+void processMessage(char *message)
+{
+    struct Message response = structureMessage(message);
+
+    if (isErrorMessage(response))
+    {
+        printErrorAndExit(getErrorMessage(response));
+    }
+    else
+    {
+        MessageType messageType = (MessageType)response.messageId;
+        switch (messageType)
+        {
+        case RES_ADD:
+            processResAdd(response);
+            break;
+        default:
+            break;
+        }
+    }
+}
+
 void *receiveUnicastThread(void *data)
 {
     struct ClientThreadArguments *threadData = (struct ClientThreadArguments *)data;
 
     while (1)
     {
-        struct Message response = structureMessage(receiveMessageFromServer(threadData->clientUnicastSocket, threadData->serverAddress));
-
-        if (isErrorMessage(response))
-        {
-            printErrorAndExit(getErrorMessage(response));
-        }
-        else
-        {
-            int equipmentId = atoi(response.payload);
-
-            char *zero = "";
-            if (equipmentId < 10)
-            {
-                zero = "0";
-            }
-            printf("New ID: %s%i\n", zero, equipmentId);
-        }
+        processMessage(receiveMessageFromServer(threadData->clientUnicastSocket, threadData->serverAddress));
     }
 
     free(threadData);
@@ -73,7 +91,7 @@ void *receiveBroadcastThread(void *data)
 
     while (1)
     {
-        puts(receiveBroadcastMessage(threadData->clientBroadcastSocket));
+        processMessage(receiveBroadcastMessage(threadData->clientBroadcastSocket));
     }
 
     free(threadData);

@@ -144,13 +144,15 @@ int main(int argc, char *argv[])
     //
     // Start multithreading server!
     //
-    pthread_t unicastListenerThread = 0, unicastSenderThread = 0, broadcastSenderThread = 0;
+    pthread_t unicastListenerThread = 0;
+    pthread_t unicastSenderThread = 0;
+    //pthread_t broadcastSenderThread = 0;
 
     createServerThread(&unicastListenerThread, serverUnicastSocket, serverBroadcastSocket, &broadcastServerAddress, receiveUnicastThread);
     createServerThread(&unicastSenderThread, serverUnicastSocket, serverBroadcastSocket, &broadcastServerAddress, sendUnicastThread);
-    createServerThread(&broadcastSenderThread, serverUnicastSocket, serverBroadcastSocket, &broadcastServerAddress, sendBroadcastThread);
+    //createServerThread(&broadcastSenderThread, serverUnicastSocket, serverBroadcastSocket, &broadcastServerAddress, sendBroadcastThread);
 
     pthread_join(unicastListenerThread, NULL);
     // pthread_join(unicastSenderThread, NULL);
-    pthread_join(broadcastSenderThread, NULL);
+    // pthread_join(broadcastSenderThread, NULL);
 }
