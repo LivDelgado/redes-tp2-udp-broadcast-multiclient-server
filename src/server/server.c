@@ -14,7 +14,7 @@
 
 int numberOfThreads = 0;
 
-struct ThreadArgs
+struct ServerThreadArguments
 {
     int serverBroadcastSocket;
     int serverUnicastSocket;
@@ -26,7 +26,7 @@ struct ThreadArgs
 
 void *receiveUnicastThread(void *args)
 {
-    struct ThreadArgs *threadData = (struct ThreadArgs *)args;
+    struct ServerThreadArguments *threadData = (struct ServerThreadArguments *)args;
 
     int connection_id = threadData->clientAddrIn.sin_port;
     struct sockaddr_in from = threadData->clientAddrIn;
@@ -46,7 +46,7 @@ void *receiveUnicastThread(void *args)
 
 void *sendUnicastThread(void *args)
 {
-    struct ThreadArgs *threadArgs = (struct ThreadArgs *)args;
+    struct ServerThreadArguments *threadArgs = (struct ServerThreadArguments *)args;
 
     int connection_id = threadArgs->clientAddrIn.sin_port;
     struct sockaddr_in from = threadArgs->clientAddrIn;
@@ -89,7 +89,7 @@ void *sendUnicastThread(void *args)
 
 void *sendBroadcastThread(void *args)
 {
-    struct ThreadArgs *threadData = (struct ThreadArgs *)args;
+    struct ServerThreadArguments *threadData = (struct ServerThreadArguments *)args;
 
     char *sendString = "teste";
     while (1)
@@ -101,6 +101,26 @@ void *sendBroadcastThread(void *args)
 
     free(threadData);
     pthread_exit(NULL);
+}
+
+void createServerThread(
+    pthread_t *newServerThread,
+    int serverUnicastSocket,
+    int serverBroadcastSocket,
+    struct sockaddr_in *broadcastServerAddress,
+    void *(*threadFunction)(void *))
+{
+    struct ServerThreadArguments *serverThreadArgs = (struct ServerThreadArguments *)malloc(sizeof(struct ServerThreadArguments));
+    serverThreadArgs->serverUnicastSocket = serverUnicastSocket;
+    serverThreadArgs->serverBroadcastSocket = serverBroadcastSocket;
+    serverThreadArgs->clientAddrLen = sizeof(struct sockaddr_in);
+    serverThreadArgs->broadcastServerAddress = broadcastServerAddress;
+
+    int serverThreadStatus = pthread_create(newServerThread, NULL, threadFunction, (void *)serverThreadArgs);
+    if (serverThreadStatus != 0)
+    {
+        printErrorAndExit("ERROR: failed to create server thread");
+    }
 }
 
 int main(int argc, char *argv[])
@@ -140,50 +160,18 @@ int main(int argc, char *argv[])
     //
     // THREADS
     //
-    pthread_t unicastListenerThread, unicastSenderThread, broadcastSenderThread;
+    pthread_t unicastListenerThread = 0, unicastSenderThread = 0, broadcastSenderThread = 0;
 
-    struct ThreadArgs *unicastListenerThreadArgs = (struct ThreadArgs *)malloc(sizeof(struct ThreadArgs));
-    unicastListenerThreadArgs->serverUnicastSocket = serverUnicastSocket;
-    unicastListenerThreadArgs->serverBroadcastSocket = serverBroadcastSocket;
-    unicastListenerThreadArgs->clientAddrLen = sizeof(struct sockaddr_in);
-    unicastListenerThreadArgs->broadcastServerAddress = &broadcastServerAddress;
-    int unicastListenerThreadStatus = pthread_create(&unicastListenerThread, NULL, receiveUnicastThread, (void *)unicastListenerThreadArgs);
-    if (unicastListenerThreadStatus != 0)
-    {
-        printErrorAndExit("ERROR: failed to create unicastListenerThread");
-    }
-
-    struct ThreadArgs *unicastSenderThreadArgs = (struct ThreadArgs *)malloc(sizeof(struct ThreadArgs));
-    unicastSenderThreadArgs->serverUnicastSocket = serverUnicastSocket;
-    unicastSenderThreadArgs->serverBroadcastSocket = serverBroadcastSocket;
-    unicastSenderThreadArgs->clientAddrLen = sizeof(struct sockaddr_in);
-    unicastSenderThreadArgs->broadcastServerAddress = &broadcastServerAddress;
-    int unicastSenderThreadStatus = pthread_create(&unicastSenderThread, NULL, sendUnicastThread, (void *)unicastSenderThreadArgs);
-    if (unicastSenderThreadStatus != 0)
-    {
-        printErrorAndExit("ERROR: failed to create unicastSenderThread");
-    }
-
-    struct ThreadArgs *broadcastSenderThreadArgs = (struct ThreadArgs *)malloc(sizeof(struct ThreadArgs));
-    broadcastSenderThreadArgs->serverUnicastSocket = serverUnicastSocket;
-    broadcastSenderThreadArgs->serverBroadcastSocket = serverBroadcastSocket;
-    broadcastSenderThreadArgs->clientAddrLen = sizeof(struct sockaddr_in);
-    broadcastSenderThreadArgs->broadcastServerAddress = &broadcastServerAddress;
-    int broadcastSenderThreadStatus = pthread_create(&broadcastSenderThread, NULL, sendBroadcastThread, (void *)broadcastSenderThreadArgs);
-    if (broadcastSenderThreadStatus != 0)
-    {
-        printErrorAndExit("ERROR: failed to create broadcastSenderThread");
-    }
-
+    createServerThread(&unicastListenerThread, serverUnicastSocket, serverBroadcastSocket, &broadcastServerAddress, receiveUnicastThread);
+    createServerThread(&unicastSenderThread, serverUnicastSocket, serverBroadcastSocket, &broadcastServerAddress, sendUnicastThread);
+    createServerThread(&broadcastSenderThread, serverUnicastSocket, serverBroadcastSocket, &broadcastServerAddress, sendBroadcastThread);
 
     pthread_join(unicastListenerThread, NULL);
-    //pthread_join(unicastSenderThread, NULL);
+    // pthread_join(unicastSenderThread, NULL);
     pthread_join(broadcastSenderThread, NULL);
-
 
     // receiveMessage(serverUnicastSocket, threadArgs->buffer, &threadArgs->clientAddrIn, threadArgs->clientAddrLen);
     // createThreadToHandleReceivedMessage(threads, threadArgs);
-
 
     /*
     //

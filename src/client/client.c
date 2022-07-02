@@ -78,7 +78,7 @@ void createClientThread(pthread_t *newClientThread, int clientUnicastSocket, int
     int clientThreadStatus = pthread_create(newClientThread, NULL, threadFunction, (void *)clientThreadArgs);
     if (clientThreadStatus != 0)
     {
-        printErrorAndExit("ERROR: failed to create thread");
+        printErrorAndExit("ERROR: failed to create client thread");
     }
 
 }
