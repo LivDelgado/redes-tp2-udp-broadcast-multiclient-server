@@ -37,6 +37,8 @@ void *processMessageThread(void *args)
             memset(messageToSend, 0, sizeof(messageToSend));
             sprintf(messageToSend, "03 %s%i ", zero, equipmentId);
             message = messageToSend;
+            sendMessageTo(*(threadData->broadcastServerAddress), threadData->serverBroadcastSocket, message);
+            sendMessage(message, threadData->serverUnicastSocket, &threadData->clientAddrIn, threadData->clientAddrLen);
         }
     }
 

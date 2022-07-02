@@ -11,23 +11,6 @@ void sendReqAdd(struct addrinfo *serverAddress, int clientSocket)
 {
     char *reqAddMessage = "01";
     sendMessageToServer(clientSocket, reqAddMessage, serverAddress);
-    struct Message response = structureMessage(receiveMessageFromServer(clientSocket, serverAddress));
-
-    if (isErrorMessage(response))
-    {
-        printErrorAndExit(getErrorMessage(response));
-    }
-    else
-    {
-        int equipmentId = atoi(response.payload);
-
-        char *zero = "";
-        if (equipmentId < 10)
-        {
-            zero = "0";
-        }
-        printf("New ID: %s%i\n", zero, equipmentId);
-    }
 }
 
 int readFromStandardInput(char *message)
@@ -55,12 +38,29 @@ int readFromStandardInput(char *message)
     return 0;
 }
 
-void *receiveUnicastThread(void *data) {
+void *receiveUnicastThread(void *data)
+{
     struct ClientThreadArguments *threadData = (struct ClientThreadArguments *)data;
 
     while (1)
     {
-        receiveMessageFromServer(threadData->clientUnicastSocket, threadData->serverAddress);
+        struct Message response = structureMessage(receiveMessageFromServer(threadData->clientUnicastSocket, threadData->serverAddress));
+
+        if (isErrorMessage(response))
+        {
+            printErrorAndExit(getErrorMessage(response));
+        }
+        else
+        {
+            int equipmentId = atoi(response.payload);
+
+            char *zero = "";
+            if (equipmentId < 10)
+            {
+                zero = "0";
+            }
+            printf("New ID: %s%i\n", zero, equipmentId);
+        }
     }
 
     free(threadData);
@@ -89,7 +89,8 @@ void *sendUnicastThread(void *data)
         char messageFromTerminal[MAXSTRINGLENGTH];
         memset(messageFromTerminal, 0, sizeof(messageFromTerminal));
 
-        if (readFromStandardInput(messageFromTerminal)) {
+        if (readFromStandardInput(messageFromTerminal))
+        {
             puts("INFO: sending message received from terminal");
             sendMessageToServer(threadData->clientUnicastSocket, messageFromTerminal, threadData->serverAddress);
         }
@@ -121,6 +122,11 @@ int main(int argc, char *argv[])
     //
     struct addrinfo *serverAddress = getServerAddress(serverIpAddress, serverPort);
     //
+
+    // send first connection message
+    puts("INFO: connecting to the server...");
+    sendReqAdd(serverAddress, clientUnicastSocket);
+
     //
     // THREADS
     //
@@ -135,13 +141,6 @@ int main(int argc, char *argv[])
     pthread_join(unicastListenerThread, NULL);
     pthread_join(unicastSenderThread, NULL);
     pthread_join(broadcastListenerThread, NULL);
-
-    //
-    //
-    //
-
-    // send first connection message
-    // sendReqAdd(serverAddress, clientUnicastSocket);
 
     /*
     //
