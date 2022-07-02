@@ -142,14 +142,14 @@ struct Message structureMessage(char *originalMessage)
 
 int isErrorMessage(struct Message message)
 {
-    return (message.messageId == 7);
+    return (message.messageId == 7) || (message.messageId == 0);
 }
 
 char *getErrorMessage(struct Message message)
 {
     if (message.messageId != 7)
     {
-        return NULL;
+        return "ERROR - invalid message";
     }
 
     int messageCode = atoi(message.payload);

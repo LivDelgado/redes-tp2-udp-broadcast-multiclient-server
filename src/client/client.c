@@ -8,9 +8,7 @@ void sendReqAdd(struct addrinfo *serverAddress, int clientSocket)
 {
     char *reqAddMessage = "01";
     sendMessageToServer(clientSocket, reqAddMessage, serverAddress);
-    char *strResponse = receiveMessageFromServer(clientSocket, serverAddress);
-    puts(strResponse);
-    struct Message response = structureMessage(strResponse);
+    struct Message response = structureMessage(receiveMessageFromServer(clientSocket, serverAddress));
 
     if (isErrorMessage(response)) {
         printErrorAndExit(getErrorMessage(response));
