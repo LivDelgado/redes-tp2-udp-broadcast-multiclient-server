@@ -6,6 +6,17 @@
 
 #include <pthread.h>
 
+void *processMessageThread(void *args)
+{
+    struct ServerThreadArguments *threadData = (struct ServerThreadArguments *)args;
+
+    puts("processor!!");
+    puts(threadData->buffer);
+
+    free(threadData);
+    pthread_exit(NULL);
+}
+
 void *receiveUnicastThread(void *args)
 {
     struct ServerThreadArguments *threadData = (struct ServerThreadArguments *)args;
@@ -20,6 +31,14 @@ void *receiveUnicastThread(void *args)
         receiveMessage(threadData->serverUnicastSocket, threadData->buffer, &threadData->clientAddrIn, threadData->clientAddrLen);
         puts("received message!");
         puts(threadData->buffer);
+
+        struct ServerThreadArguments *newThreadArgs = (struct ServerThreadArguments *)malloc(sizeof(struct ServerThreadArguments));
+        *newThreadArgs = *threadData;
+
+        pthread_t processorThread = 0;
+        createServerThreadBasedOnExistingThread(&processorThread, newThreadArgs, processMessageThread);
+        pthread_join(processorThread, NULL);
+
         memset(threadData->buffer, 0, sizeof(threadData->buffer));
     }
     

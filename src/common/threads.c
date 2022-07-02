@@ -33,3 +33,15 @@ void createServerThread(
         printErrorAndExit("ERROR: failed to create server thread");
     }
 }
+
+void createServerThreadBasedOnExistingThread(
+    pthread_t *newServerThread,
+    struct ServerThreadArguments *threadArguments,
+    void *(*threadFunction)(void *))
+{
+    int serverThreadStatus = pthread_create(newServerThread, NULL, threadFunction, (void *)threadArguments);
+    if (serverThreadStatus != 0)
+    {
+        printErrorAndExit("ERROR: failed to create server thread");
+    }
+}
