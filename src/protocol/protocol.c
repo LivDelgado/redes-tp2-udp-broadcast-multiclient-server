@@ -26,7 +26,7 @@ void bindToBroadcasterServer(int clientSocket, char *serverPort)
     memset(&broadcastAddr, 0, sizeof(broadcastAddr)); // Zero out structure
     broadcastAddr.sin_family = AF_INET;               // Internet address family
     broadcastAddr.sin_addr.s_addr = INADDR_ANY;       // Any incoming interface
-    broadcastAddr.sin_port = htons(atoi("51512")); // Broadcast port
+    broadcastAddr.sin_port = htons(atoi(BROADCAST_PORT)); // Broadcast port
 
     // Bind to the broadcast port
     if (bind(clientSocket, (struct sockaddr *)&broadcastAddr, sizeof(broadcastAddr)) < 0)

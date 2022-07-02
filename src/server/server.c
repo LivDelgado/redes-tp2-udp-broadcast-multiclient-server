@@ -139,7 +139,7 @@ int main(int argc, char *argv[])
     // BROADCAST
     //
     char *sendString = "teste";
-    struct sockaddr_in serverAddress = createBroadcastAddress("51512");
+    struct sockaddr_in serverAddress = createBroadcastAddress(BROADCAST_PORT);
     while (1)
     {
         sendMessageTo(serverAddress, serverBroadcastSocket, sendString);
