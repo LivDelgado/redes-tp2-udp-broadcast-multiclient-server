@@ -26,7 +26,7 @@ void bindToBroadcasterServer(int clientSocket, char *serverPort)
     memset(&broadcastAddr, 0, sizeof(broadcastAddr)); // Zero out structure
     broadcastAddr.sin_family = AF_INET;               // Internet address family
     broadcastAddr.sin_addr.s_addr = INADDR_ANY;       // Any incoming interface
-    broadcastAddr.sin_port = htons(atoi(serverPort)); // Broadcast port
+    broadcastAddr.sin_port = htons(atoi("51512")); // Broadcast port
 
     // Bind to the broadcast port
     if (bind(clientSocket, (struct sockaddr *)&broadcastAddr, sizeof(broadcastAddr)) < 0)
@@ -170,25 +170,19 @@ struct sockaddr_in createBroadcastAddress(char *port)
 
 void createAddress(int serverSocket, char *port)
 {
-    // Construct the server address structure
-    struct addrinfo addrCriteria;                   // Criteria for address
-    memset(&addrCriteria, 0, sizeof(addrCriteria)); // Zero out structure
-    addrCriteria.ai_family = AF_INET;               // IPV4
-    addrCriteria.ai_flags = AI_PASSIVE;             // Accept on any address/port
-    addrCriteria.ai_socktype = SOCK_DGRAM;          // Only datagram socket
-    addrCriteria.ai_protocol = IPPROTO_UDP;         // Only UDP socket
+    in_port_t serverPort = htons((in_port_t)atoi(port));
 
-    struct addrinfo *servAddr; // List of server addresses
-    int rtnVal = getaddrinfo(NULL, port, &addrCriteria, &servAddr);
-    if (rtnVal != 0)
-        printErrorAndExit("getaddrinfo() failed");
+    /* Construct local address structure */
+    struct sockaddr_in server;          /* Broadcast address */
+    memset(&server, 0, sizeof(server)); /* Zero out structure */
+    server.sin_family = AF_INET; /* Internet address family */
+    server.sin_port = serverPort;         /* Broadcast port */
+    server.sin_addr.s_addr = INADDR_ANY;
 
-    // Bind to the local address
-    if (bind(serverSocket, servAddr->ai_addr, servAddr->ai_addrlen) < 0)
+    if (bind(serverSocket, (struct sockaddr *)&server, sizeof(server)) < 0)
+    {
         printErrorAndExit("bind() failed");
-
-    // Free address list allocated by getaddrinfo()
-    freeaddrinfo(servAddr);
+    }
 }
 
 void sendMessageTo(struct sockaddr_in serverAddress, int serverSocket, char *message)

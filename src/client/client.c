@@ -44,7 +44,6 @@ int main(int argc, char *argv[])
     // send first connection message
     //sendReqAdd(serverAddress, clientSocket);
 
-    /*
     //
     // UNICAST
     //
@@ -59,7 +58,7 @@ int main(int argc, char *argv[])
     //
     //
     //
-    */
+
 
     while (1)
     {

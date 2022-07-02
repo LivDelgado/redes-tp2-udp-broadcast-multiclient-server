@@ -95,8 +95,9 @@ int main(int argc, char *argv[])
     // to generate a random number later on
     srand(time(NULL));
 
-    int serverSocket = createUdpSocket();
-    setSocketPermissionToBroadcast(serverSocket);
+    int serverBroadcastSocket = createUdpSocket();
+    int serverUnicastSocket = createUdpSocket();
+    setSocketPermissionToBroadcast(serverBroadcastSocket);
 
     /*
     //
@@ -123,25 +124,25 @@ int main(int argc, char *argv[])
     //
     // UNICAST
     //
-    //createAddress(serverSocket, port);
+    createAddress(serverUnicastSocket, port);
     //    while (1)
     //    {
-    //puts("receiving message");
-    //receiveMessageAndRespond(serverSocket);
+    puts("receiving message");
+    receiveMessageAndRespond(serverUnicastSocket);
     //    }
     //
     //
     //
-    //puts("received and responded");
+    puts("received and responded");
 
     //
     // BROADCAST
     //
     char *sendString = "teste";
-    struct sockaddr_in serverAddress = createBroadcastAddress(port);
+    struct sockaddr_in serverAddress = createBroadcastAddress("51512");
     while (1)
     {
-        sendMessageTo(serverAddress, serverSocket, sendString);
+        sendMessageTo(serverAddress, serverBroadcastSocket, sendString);
         puts("sent! waiting 5");
         sleep(5);
     }
