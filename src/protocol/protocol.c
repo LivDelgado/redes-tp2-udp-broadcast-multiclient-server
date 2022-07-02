@@ -119,7 +119,6 @@ void receiveMessageAndRespond(int serverSocket)
 
     int connection_id = ((struct sockaddr_in *)&clntAddr)->sin_port;
     char *ip = inet_ntoa(((struct sockaddr_in *)&clntAddr)->sin_addr);
-    printf("INFO: received request from %s:%d.\n", ip, connection_id);
 
     // Send received datagram back to the client
     ssize_t numBytesSent = sendto(serverSocket, messageReceived, MAXSTRINGLENGTH, 0,

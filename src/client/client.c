@@ -16,6 +16,34 @@ typedef struct
 
 Equipment self;
 
+char *listConnectedEquipmentsAsString()
+{
+    char equipmentString[5] = "";
+    char output[MAXSTRINGLENGTH] = "";
+
+    for (int i = 0; i < MAX_EQUIPMENTS; i++)
+    {
+        if (i > 0)
+        {
+            strcat(output, SPLITTER);
+        }
+        if (self.listOfEquipments[i] == 1)
+        {
+            int equipmentId = i + 1;
+            char *zero = "";
+            if (equipmentId < 10)
+            {
+                zero = "0";
+            }
+            sprintf(equipmentString, "%s%i", zero, equipmentId);
+            strcat(output, equipmentString);
+        }
+    }
+
+    char *connectedEquipmentsString = output;
+    return connectedEquipmentsString;
+}
+
 void sendReqAdd(struct addrinfo *serverAddress, int clientSocket)
 {
     char *reqAddMessage = "01";
@@ -64,11 +92,15 @@ void processResAdd(struct Message message)
     if (self.equipmentId == 0) // it means that this equipment hasn't connected yet, then it should register things!
     {
         self.equipmentId = equipmentId;
+        // NEEDED OUTPUT!!!
         printf("New ID: %s%i\n", zero, equipmentId);
+        //
     }
     else
     { // equipment is already connected
+        // NEEDED OUTPUT!!!
         printf("Equipment %s%i added\n", zero, equipmentId);
+        //
     }
 }
 
@@ -100,7 +132,9 @@ void processReqRem(struct Message message)
         {
             zero = "0";
         }
+        // NEEDED OUTPUT!!!
         printf("Equipment %s%i removed\n", zero, message.sourceId);
+        //
     }
 }
 
@@ -108,17 +142,63 @@ void processOk(struct Message message)
 {
     if (message.destineId == self.equipmentId)
     {
+        // NEEDED OUTPUT!!!
         puts("Successful removal");
+        //
     }
 }
 
-void processMessage(char *message)
+void processReqInf(struct Message message, struct ClientThreadArguments *threadData)
+{
+    // NEEDED OUTPUT!!!
+    puts("requested information");
+    //
+
+    // generate information
+    char *sourceZero = "";
+    if (message.sourceId < 10)
+    {
+        sourceZero = "0";
+    }
+    char *destineZero = "";
+    if (message.destineId < 10)
+    {
+        destineZero = "0";
+    }
+
+    char responseResInfMessage[MAXSTRINGLENGTH] = "";
+    sprintf(
+        responseResInfMessage,
+        "06 %s%i %s%i %i.%i%i",
+        destineZero, message.destineId,
+        sourceZero, message.sourceId,
+        getRandomNumber(), getRandomNumber(), getRandomNumber());
+    
+    // respond RES_INF(IdEQj, IdEQi, PAYLOAD).
+    sendMessageToServer(threadData->clientUnicastSocket, responseResInfMessage, threadData->serverAddress);
+}
+
+void processResInf(struct Message message)
+{
+    char *zero = "";
+    if (message.sourceId < 10)
+    {
+        zero = "0";
+    }
+    // NEEDED OUTPUT!!!
+    printf("Value from %s%i: %s\n", zero, message.sourceId, message.payload);
+    //
+}
+
+void processMessage(char *message, struct ClientThreadArguments *threadData)
 {
     struct Message response = structureMessage(message);
 
     if (isErrorMessage(response))
     {
+        // NEEDED OUTPUT!!!
         puts(getErrorMessage(response));
+        //
     }
     else
     {
@@ -137,6 +217,12 @@ void processMessage(char *message)
         case OK:
             processOk(response);
             break;
+        case REQ_INF:
+            processReqInf(response, threadData);
+            break;
+        case RES_INF:
+            processResInf(response);
+            break;
         default:
             break;
         }
@@ -149,7 +235,7 @@ void *receiveUnicastThread(void *data)
 
     while (1)
     {
-        processMessage(receiveMessageFromServer(threadData->clientUnicastSocket, threadData->serverAddress));
+        processMessage(receiveMessageFromServer(threadData->clientUnicastSocket, threadData->serverAddress), threadData);
     }
 
     free(threadData);
@@ -162,7 +248,7 @@ void *receiveBroadcastThread(void *data)
 
     while (1)
     {
-        processMessage(receiveBroadcastMessage(threadData->clientBroadcastSocket));
+        processMessage(receiveBroadcastMessage(threadData->clientBroadcastSocket), threadData);
     }
 
     free(threadData);
@@ -184,6 +270,19 @@ void *sendUnicastThread(void *data)
             {
                 if (self.equipmentId > 0)
                     sendMessageToServer(threadData->clientUnicastSocket, constructMessageWithTwoFields(2, self.equipmentId), threadData->serverAddress);
+            }
+            else if (strncmp(messageFromTerminal, "request information from", 24) == 0)
+            {
+                char destineIdStr[3];
+                memcpy(destineIdStr, &messageFromTerminal[strlen(messageFromTerminal) - 2], 2);
+                destineIdStr[2] = '\0';
+
+                int destineId = atoi(destineIdStr);
+                sendMessageToServer(threadData->clientUnicastSocket, constructMessageWithThreeFields(5, self.equipmentId, destineId), threadData->serverAddress);
+            }
+            else if (strncmp(messageFromTerminal, "list equipment", 14) == 0)
+            {
+                puts(listConnectedEquipmentsAsString());
             }
             else
             {
@@ -220,7 +319,6 @@ int main(int argc, char *argv[])
     //
 
     // send first connection message
-    puts("INFO: connecting to the server...");
     self.equipmentId = 0;
     for (int i = 0; i < MAX_EQUIPMENTS; i++)
     {
