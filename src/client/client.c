@@ -7,11 +7,11 @@
 
 #include <pthread.h>
 
-#define STDIN 0 // file descriptor for standard input
-
 #include "utils.h"
 #include "protocol.h"
 #include "messaging.h"
+
+#define STANDARD_INPUT 0 // File Descriptor - Standard input
 
 void sendReqAdd(struct addrinfo *serverAddress, int clientSocket)
 {
@@ -43,27 +43,28 @@ struct ThreadArgs
     int clientBroadcastSocket;
 };
 
-int nonBlockRead(char *message)
+int readFromStandardInput(char *message)
 {
-    //size_t messageLen;
-    struct timeval tv;
-    fd_set readfds;
-    tv.tv_sec = 0;
-    tv.tv_usec = 50000;
-    FD_ZERO(&readfds);
-    FD_SET(STDIN, &readfds);
+    struct timeval timeInterval;
+    timeInterval.tv_sec = 0;
+    timeInterval.tv_usec = 30000;
 
-    select(STDIN + 1, &readfds, NULL, NULL, &tv);
-    if (FD_ISSET(STDIN, &readfds))
+    fd_set readFileDescriptor;
+    FD_ZERO(&readFileDescriptor);
+    FD_SET(STANDARD_INPUT, &readFileDescriptor);
+
+    select(STANDARD_INPUT + 1, &readFileDescriptor, NULL, NULL, &timeInterval);
+
+    if (FD_ISSET(STANDARD_INPUT, &readFileDescriptor))
     {
-        read(STDIN, message, MAXSTRINGLENGTH - 1);
-        // getline(&message, &messageLen, stdin); // get the message from user input
+        read(STANDARD_INPUT, message, MAXSTRINGLENGTH - 1);
         return 1;
     }
     else
     {
         fflush(stdout);
     }
+
     return 0;
 }
 
@@ -98,11 +99,12 @@ void *sendUnicastThread(void *data)
 
     while (1)
     {
-        char buffer[MAXSTRINGLENGTH];
-        memset(buffer, 0, sizeof(buffer));
-        if (nonBlockRead(buffer)) {
-            puts("INFO: sending message");
-            sendMessageToServer(threadData->clientUnicastSocket, buffer, threadData->serverAddress);
+        char messageFromTerminal[MAXSTRINGLENGTH];
+        memset(messageFromTerminal, 0, sizeof(messageFromTerminal));
+
+        if (readFromStandardInput(messageFromTerminal)) {
+            puts("INFO: sending message received from terminal");
+            sendMessageToServer(threadData->clientUnicastSocket, messageFromTerminal, threadData->serverAddress);
         }
     }
 
