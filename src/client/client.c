@@ -185,6 +185,17 @@ void *sendUnicastThread(void *data)
                 if (self.equipmentId > 0)
                     sendMessageToServer(threadData->clientUnicastSocket, constructMessageWithTwoFields(2, self.equipmentId), threadData->serverAddress);
             }
+            else if (strncmp(messageFromTerminal, "request information from", 24) == 0)
+            {
+                char destineIdStr[3];
+                memcpy(destineIdStr, &messageFromTerminal[strlen(messageFromTerminal) - 2], 2);
+                destineIdStr[2] = '\0';
+
+                puts(destineIdStr);
+
+                int destineId = atoi(destineIdStr);
+                sendMessageToServer(threadData->clientUnicastSocket, constructMessageWithThreeFields(5, self.equipmentId, destineId), threadData->serverAddress);
+            }
             else
             {
                 puts("command not recognized!");
