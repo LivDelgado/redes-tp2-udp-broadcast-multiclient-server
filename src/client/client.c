@@ -92,11 +92,15 @@ void processResAdd(struct Message message)
     if (self.equipmentId == 0) // it means that this equipment hasn't connected yet, then it should register things!
     {
         self.equipmentId = equipmentId;
+        // NEEDED OUTPUT!!!
         printf("New ID: %s%i\n", zero, equipmentId);
+        //
     }
     else
     { // equipment is already connected
+        // NEEDED OUTPUT!!!
         printf("Equipment %s%i added\n", zero, equipmentId);
+        //
     }
 }
 
@@ -128,7 +132,9 @@ void processReqRem(struct Message message)
         {
             zero = "0";
         }
+        // NEEDED OUTPUT!!!
         printf("Equipment %s%i removed\n", zero, message.sourceId);
+        //
     }
 }
 
@@ -136,13 +142,18 @@ void processOk(struct Message message)
 {
     if (message.destineId == self.equipmentId)
     {
+        // NEEDED OUTPUT!!!
         puts("Successful removal");
+        //
     }
 }
 
 void processReqInf(struct Message message, struct ClientThreadArguments *threadData)
 {
+    // NEEDED OUTPUT!!!
     puts("requested information");
+    //
+
     // generate information
     char *sourceZero = "";
     if (message.sourceId < 10)
@@ -174,7 +185,9 @@ void processResInf(struct Message message)
     {
         zero = "0";
     }
+    // NEEDED OUTPUT!!!
     printf("Value from %s%i: %s\n", zero, message.sourceId, message.payload);
+    //
 }
 
 void processMessage(char *message, struct ClientThreadArguments *threadData)
@@ -183,7 +196,9 @@ void processMessage(char *message, struct ClientThreadArguments *threadData)
 
     if (isErrorMessage(response))
     {
+        // NEEDED OUTPUT!!!
         puts(getErrorMessage(response));
+        //
     }
     else
     {
@@ -262,8 +277,6 @@ void *sendUnicastThread(void *data)
                 memcpy(destineIdStr, &messageFromTerminal[strlen(messageFromTerminal) - 2], 2);
                 destineIdStr[2] = '\0';
 
-                puts(destineIdStr);
-
                 int destineId = atoi(destineIdStr);
                 sendMessageToServer(threadData->clientUnicastSocket, constructMessageWithThreeFields(5, self.equipmentId, destineId), threadData->serverAddress);
             }
@@ -306,7 +319,6 @@ int main(int argc, char *argv[])
     //
 
     // send first connection message
-    puts("INFO: connecting to the server...");
     self.equipmentId = 0;
     for (int i = 0; i < MAX_EQUIPMENTS; i++)
     {

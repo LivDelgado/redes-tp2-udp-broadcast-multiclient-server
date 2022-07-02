@@ -15,7 +15,9 @@ void processNewConnection(struct ServerThreadArguments *threadData)
     {
         zero = "0";
     }
+    // NEEDED OUTPUT!!!
     printf("Equipment %s%i added\n", zero, equipmentId);
+    //
 
     sendMessageTo(*(threadData->broadcastServerAddress), threadData->serverBroadcastSocket, constructMessageWithTwoFields(3, equipmentId));
 
@@ -58,7 +60,9 @@ void processReqRem(struct ServerThreadArguments *threadData, struct Message mess
         {
             zero = "0";
         }
+        // NEEDED OUTPUT!!!
         printf("Equipment %s%i removed\n", zero, message.sourceId);
+        //
 
         // send ok message
         sendMessage(constructMessageWithThreeFields(8, message.sourceId, 1), threadData->serverUnicastSocket, &threadData->clientAddrIn, threadData->clientAddrLen);
@@ -78,7 +82,9 @@ void processReqInf(struct ServerThreadArguments *threadData, struct Message mess
         {
             zero = "0";
         }
+        // NEEDED OUTPUT!!!
         printf("Equipment %s%i not found\n", zero, message.sourceId);
+        //
         // send error 2 message
         sendMessage(
             constructMessageWithThreeFields(7, message.sourceId, 2),
@@ -93,7 +99,9 @@ void processReqInf(struct ServerThreadArguments *threadData, struct Message mess
             zero = "0";
         }
         // 2.2.1
+        // NEEDED OUTPUT!!!
         printf("Equipment %s%i not found\n", zero, message.destineId);
+        //
         // send error 3 message
         sendMessage(
             constructMessageWithThreeFields(7, message.destineId, 3),
@@ -101,9 +109,6 @@ void processReqInf(struct ServerThreadArguments *threadData, struct Message mess
     }
     else
     {
-        puts("gonna send the req inf to the other client..");
-        puts(threadData->buffer);
-
         // send req_inf to destine address
         struct sockaddr_in destineAddress = getEquipmentAddress(message.destineId);
         sendMessage(
@@ -121,7 +126,9 @@ void processResInf(struct ServerThreadArguments *threadData, struct Message mess
         {
             zero = "0";
         }
+        // NEEDED OUTPUT!!!
         printf("Equipment %s%i not found\n", zero, message.sourceId);
+        //
         // send error 2 message
         sendMessage(
             constructMessageWithThreeFields(7, message.sourceId, 2),
@@ -135,7 +142,9 @@ void processResInf(struct ServerThreadArguments *threadData, struct Message mess
         {
             zero = "0";
         }
+        // NEEDED OUTPUT!!!
         printf("Equipment %s%i not found\n", zero, message.destineId);
+        //
         // send error 3 message
         sendMessage(
             constructMessageWithThreeFields(7, message.destineId, 3),
@@ -143,11 +152,7 @@ void processResInf(struct ServerThreadArguments *threadData, struct Message mess
     }
     else
     {
-        // repassa RES_INF(IdEQj, IdEQi, PAYLOAD) para IdEQi
-        puts("gonna send the res inf to the other client..");
-        puts(threadData->buffer);
-
-        // send req_inf to destine address
+        // SEND RES INF TO OTHER CLIENT
         struct sockaddr_in destineAddress = getEquipmentAddress(message.destineId);
         sendMessage(
             threadData->buffer, threadData->serverUnicastSocket, &destineAddress, threadData->clientAddrLen);
@@ -186,11 +191,6 @@ void *receiveUnicastThread(void *args)
 {
     struct ServerThreadArguments *threadData = (struct ServerThreadArguments *)args;
 
-    int connection_id = threadData->clientAddrIn.sin_port;
-    struct sockaddr_in from = threadData->clientAddrIn;
-    char *ip = inet_ntoa(from.sin_addr);
-    printf("INFO: created new thread to handle client request %s:%d.\n", ip, connection_id);
-
     while (1)
     {
         receiveMessage(threadData->serverUnicastSocket, threadData->buffer, &threadData->clientAddrIn, threadData->clientAddrLen);
@@ -213,12 +213,7 @@ void *sendUnicastThread(void *args)
 {
     struct ServerThreadArguments *threadData = (struct ServerThreadArguments *)args;
 
-    int connection_id = threadData->clientAddrIn.sin_port;
-    struct sockaddr_in from = threadData->clientAddrIn;
-    char *ip = inet_ntoa(from.sin_addr);
-    printf("INFO: created new thread to handle client request %s:%d.\n", ip, connection_id);
-
-    // sendMessage(threadData->buffer, threadData->serverUnicastSocket, &threadData->clientAddrIn, threadData->clientAddrLen);
+    sendMessage(threadData->buffer, threadData->serverUnicastSocket, &threadData->clientAddrIn, threadData->clientAddrLen);
 
     memset(threadData->buffer, 0, sizeof(threadData->buffer));
     free(threadData);
@@ -279,13 +274,7 @@ int main(int argc, char *argv[])
     //
     pthread_t unicastListenerThread = 0;
     pthread_t unicastSenderThread = 0;
-    // pthread_t broadcastSenderThread = 0;
 
     createServerThread(&unicastListenerThread, serverUnicastSocket, serverBroadcastSocket, &broadcastServerAddress, receiveUnicastThread);
-    createServerThread(&unicastSenderThread, serverUnicastSocket, serverBroadcastSocket, &broadcastServerAddress, sendUnicastThread);
-    // createServerThread(&broadcastSenderThread, serverUnicastSocket, serverBroadcastSocket, &broadcastServerAddress, sendBroadcastThread);
-
     pthread_join(unicastListenerThread, NULL);
-    // pthread_join(unicastSenderThread, NULL);
-    // pthread_join(broadcastSenderThread, NULL);
 }
