@@ -273,7 +273,7 @@ int main(int argc, char *argv[])
     // Start multithreading server!
     //
     pthread_t unicastListenerThread = 0;
-    pthread_t unicastSenderThread = 0;
+    //pthread_t unicastSenderThread = 0;
 
     createServerThread(&unicastListenerThread, serverUnicastSocket, serverBroadcastSocket, &broadcastServerAddress, receiveUnicastThread);
     pthread_join(unicastListenerThread, NULL);

@@ -1,7 +1,8 @@
 CC = gcc
-CFLAGS  = -g -Wall
+CFLAGS  = -g -w
 INCLUDE_FLAGS = -I include/
 
+.SILENT:
 default: equipment server
 
 

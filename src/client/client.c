@@ -16,32 +16,30 @@ typedef struct
 
 Equipment self;
 
-char *listConnectedEquipmentsAsString()
+void printListConnectedEquipments()
 {
-    char equipmentString[5] = "";
-    char output[MAXSTRINGLENGTH] = "";
+    int hasListedAny = 0;
 
     for (int i = 0; i < MAX_EQUIPMENTS; i++)
     {
-        if (i > 0)
-        {
-            strcat(output, SPLITTER);
-        }
         if (self.listOfEquipments[i] == 1)
         {
+            if (hasListedAny == 1)
+            {
+                printf(" ");
+            }
             int equipmentId = i + 1;
-            char *zero = "";
+            char zero[2] = "";
             if (equipmentId < 10)
             {
-                zero = "0";
+                strcpy(zero, "0");
             }
-            sprintf(equipmentString, "%s%i", zero, equipmentId);
-            strcat(output, equipmentString);
+            hasListedAny = 1;
+            printf("%s%i", zero, equipmentId);
         }
     }
 
-    char *connectedEquipmentsString = output;
-    return connectedEquipmentsString;
+    printf("\n");
 }
 
 void sendReqAdd(struct addrinfo *serverAddress, int clientSocket)
@@ -142,9 +140,7 @@ void processOk(struct Message message)
 {
     if (message.destineId == self.equipmentId)
     {
-        // NEEDED OUTPUT!!!
-        puts("Successful removal");
-        //
+        printErrorAndExit("Successful removal");
     }
 }
 
@@ -282,7 +278,7 @@ void *sendUnicastThread(void *data)
             }
             else if (strncmp(messageFromTerminal, "list equipment", 14) == 0)
             {
-                puts(listConnectedEquipmentsAsString());
+                printListConnectedEquipments();
             }
             else
             {

@@ -117,7 +117,9 @@ int equipmentExist(int equipmentId)
 char *listConnectedEquipmentsAsString()
 {
     char equipmentString[5] = "";
+    memset(equipmentString, 0, sizeof(equipmentString));
     char output[MAXSTRINGLENGTH] = "";
+    memset(output, 0, sizeof(output));
 
     for (int i = 0; i < MAX_EQUIPMENTS; i++)
     {

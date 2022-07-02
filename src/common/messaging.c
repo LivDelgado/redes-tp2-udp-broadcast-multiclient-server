@@ -210,6 +210,7 @@ char *constructMessageWithTwoFields(int fieldOne, int fieldTwo)
     }
 
     char requestToServer[MAXSTRINGLENGTH];
+    memset(requestToServer, 0, sizeof(requestToServer));
     sprintf(requestToServer, "0%i %s%i ", fieldOne, zero, fieldTwo);
 
     char *output = requestToServer;
@@ -225,6 +226,7 @@ char *constructMessageWithThreeFields(int fieldOne, int fieldTwo, int fieldThree
     }
 
     char requestToServer[MAXSTRINGLENGTH];
+    memset(requestToServer, 0, sizeof(requestToServer));
     sprintf(requestToServer, "0%i %s%i 0%i ", fieldOne, zero, fieldTwo, fieldThree);
 
     char *output = requestToServer;
