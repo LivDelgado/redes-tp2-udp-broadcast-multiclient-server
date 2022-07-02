@@ -146,7 +146,7 @@ char *receiveMessage(int serverSocket, char *buffer, struct sockaddr_in *clientA
 void sendMessage(char *response, int serverSocket, struct sockaddr_in *clientAddrIn, socklen_t clientAddrLen)
 {
     // Send received datagram back to the client
-    ssize_t numBytesSent = sendto(serverSocket, response, MAXSTRINGLENGTH, 0, (struct sockaddr *)clientAddrIn, clientAddrLen);
+    ssize_t numBytesSent = sendto(serverSocket, response, strlen(response), 0, (struct sockaddr *)clientAddrIn, clientAddrLen);
     if (numBytesSent < 0)
     {
         printErrorAndExit("sendto() failed");

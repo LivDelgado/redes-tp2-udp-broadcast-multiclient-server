@@ -176,3 +176,57 @@ char *getErrorMessage(struct Message message)
 
     return NULL;
 }
+
+char *getOkMessage(struct Message message)
+{
+    if (message.messageId != 8)
+    {
+        return "ERROR - invalid message";
+    }
+
+    int messageCode = atoi(message.payload);
+
+    if (messageCode != 1)
+    {
+        return NULL;
+    }
+
+    switch (messageCode)
+    {
+    case 1:
+        return "Successful removal";
+        break;
+    }
+
+    return NULL;
+}
+
+char *constructMessageWithTwoFields(int fieldOne, int fieldTwo)
+{
+    char *zero = "";
+    if (fieldTwo < 10)
+    {
+        zero = "0";
+    }
+
+    char requestToServer[MAXSTRINGLENGTH];
+    sprintf(requestToServer, "0%i %s%i ", fieldOne, zero, fieldTwo);
+
+    char *output = requestToServer;
+    return output;
+}
+
+char *constructMessageWithThreeFields(int fieldOne, int fieldTwo, int fieldThree)
+{
+    char *zero = "";
+    if (fieldTwo < 10)
+    {
+        zero = "0";
+    }
+
+    char requestToServer[MAXSTRINGLENGTH];
+    sprintf(requestToServer, "0%i %s%i 0%i ", fieldOne, zero, fieldTwo, fieldThree);
+
+    char *output = requestToServer;
+    return output;
+}

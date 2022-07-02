@@ -38,5 +38,9 @@ struct MessageFields *initializeMessageFields();
 
 int isErrorMessage(struct Message message);
 char *getErrorMessage(struct Message message);
+char *getOkMessage(struct Message message);
+
+char *constructMessageWithTwoFields(int fieldOne, int fieldTwo);
+char *constructMessageWithThreeFields(int fieldOne, int fieldTwo, int fieldThree);
 
 #endif

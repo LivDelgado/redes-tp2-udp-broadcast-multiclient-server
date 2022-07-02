@@ -10,8 +10,6 @@ void processNewConnection(struct ServerThreadArguments *threadData)
 {
     int equipmentId = newConnection(threadData->clientAddrIn);
 
-    char *message = "";
-
     char *zero = "";
     if (equipmentId < 10)
     {
@@ -19,11 +17,7 @@ void processNewConnection(struct ServerThreadArguments *threadData)
     }
     printf("Equipment %s%i added\n", zero, equipmentId);
 
-    char messageToSend[MAXSTRINGLENGTH];
-    memset(messageToSend, 0, sizeof(messageToSend));
-    sprintf(messageToSend, "03 %s%i ", zero, equipmentId);
-    message = messageToSend;
-    sendMessageTo(*(threadData->broadcastServerAddress), threadData->serverBroadcastSocket, message);
+    sendMessageTo(*(threadData->broadcastServerAddress), threadData->serverBroadcastSocket, constructMessageWithTwoFields(3, equipmentId));
 
     char reslistOutput[MAXSTRINGLENGTH] = "";
     strcat(reslistOutput, "04");
@@ -38,14 +32,39 @@ void processReqAdd(struct ServerThreadArguments *threadData, struct Message mess
     {
         if (alreadyReachedMaxNumberOfConnections())
         {
-            char *message = "";
-            message = "07 00 04";
-            sendMessage(message, threadData->serverUnicastSocket, &threadData->clientAddrIn, threadData->clientAddrLen);
+            sendMessage(constructMessageWithThreeFields(7, 0, 4), threadData->serverUnicastSocket, &threadData->clientAddrIn, threadData->clientAddrLen);
         }
         else
         {
             processNewConnection(threadData);
         }
+    }
+}
+
+void processReqRem(struct ServerThreadArguments *threadData, struct Message message)
+{
+    if (getEquipmentById(message.sourceId) < 0)
+    { // check if equipment exists
+        sendMessage(
+            constructMessageWithThreeFields(7, message.sourceId, 1),
+            threadData->serverUnicastSocket, &threadData->clientAddrIn, threadData->clientAddrLen);
+    }
+    else
+    {
+        removeConnection(message.sourceId);
+
+        char *zero = "";
+        if (message.sourceId < 10)
+        {
+            zero = "0";
+        }
+        printf("Equipment %s%i removed\n", zero, message.sourceId);
+
+        // send ok message
+        sendMessage(constructMessageWithThreeFields(8, message.sourceId, 1), threadData->serverUnicastSocket, &threadData->clientAddrIn, threadData->clientAddrLen);
+
+        // broadcast equipment removed message
+        sendMessageTo(*(threadData->broadcastServerAddress), threadData->serverBroadcastSocket, threadData->buffer);
     }
 }
 
@@ -57,11 +76,14 @@ void *processMessageThread(void *args)
     MessageType messageType = (MessageType)messageReceived.messageId;
     switch (messageType)
     {
-        case REQ_ADD:
-            processReqAdd(threadData, messageReceived);
-            break;
-        default:
-            break;
+    case REQ_ADD:
+        processReqAdd(threadData, messageReceived);
+        break;
+    case REQ_REM:
+        processReqRem(threadData, messageReceived);
+        break;
+    default:
+        break;
     }
 
     free(threadData);
