@@ -34,16 +34,14 @@ int main(int argc, char *argv[])
     char *serverIpAddress = argv[1]; // first argument is server address
     char *serverPort = argv[2];      // second argument is server port
 
-    //int clientUnicastSocket = createUdpSocket();
-    int clientBroadcastSocket = createUdpSocket();
-
-    bindToBroadcasterServer(clientBroadcastSocket, serverPort);
-
+    int clientSocket = createUdpSocket();
+    bindToBroadcasterServer(clientSocket, serverPort);
     struct addrinfo *serverAddress = getServerAddress(serverIpAddress, serverPort);
 
     // send first connection message
     //sendReqAdd(serverAddress, clientSocket);
 
+    /*
     //
     // UNICAST
     //
@@ -51,13 +49,14 @@ int main(int argc, char *argv[])
     size_t echoStringLen;
 
     getline(&echoString, &echoStringLen, stdin); // get the message from user input
-    sendMessageToServer(clientBroadcastSocket, echoString, serverAddress);
+    sendMessageToServer(clientSocket, echoString, serverAddress);
     puts("sent message");
-    puts(receiveMessageFromServer(clientBroadcastSocket));
+    puts(receiveMessageFromServer(clientSocket));
     puts("received response");
     //
     //
     //
+    */
 
 
     while (1)
@@ -65,7 +64,7 @@ int main(int argc, char *argv[])
         //
         // BROADCAST
         //
-        puts(receiveBroadcastMessage(clientBroadcastSocket));
+        puts(receiveBroadcastMessage(clientSocket));
         //
         //
         //

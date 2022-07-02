@@ -15,7 +15,8 @@ int createUdpSocket()
 void bindToBroadcasterServer(int clientSocket, char *serverPort)
 {
     int broadcast = 1;
-    int setBroadcast = setsockopt(clientSocket, SOL_SOCKET, SO_BROADCAST | SO_REUSEADDR, &broadcast, sizeof(broadcast));
+    int setBroadcast = setsockopt(clientSocket, SOL_SOCKET, SO_BROADCAST, &broadcast, sizeof(broadcast));
+    setsockopt(clientSocket, SOL_SOCKET, SO_REUSEADDR, &broadcast, sizeof(broadcast));
     if (setBroadcast < 0)
     {
         printErrorAndExit("ERROR: failed to set broadcast socket option");

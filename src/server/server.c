@@ -16,7 +16,8 @@ int numberOfThreads = 0;
 
 struct ThreadArgs
 {
-    int serverSocket;
+    int serverBroadcastSocket;
+    int serverUnicastSocket;
     struct sockaddr_in clientAddrIn;
     socklen_t clientAddrLen;
     char buffer[MAXSTRINGLENGTH];
@@ -56,7 +57,7 @@ void *ThreadMain(void *args)
         }
     }
 
-    sendMessage(message, threadArgs->serverSocket, &threadArgs->clientAddrIn, threadArgs->clientAddrLen);
+    sendMessage(message, threadArgs->serverUnicastSocket, &threadArgs->clientAddrIn, threadArgs->clientAddrLen);
 
     free(threadArgs);
     numberOfThreads--;
@@ -105,15 +106,16 @@ int main(int argc, char *argv[])
     //
     pthread_t threads[MAXTHREADS];
 
-    createAddress(serverSocket, port);
+    createAddress(serverUnicastSocket, port);
     while (1)
     {
         // Create separate memory for client argument
         struct ThreadArgs *threadArgs = (struct ThreadArgs *)malloc(sizeof(struct ThreadArgs));
-        threadArgs->serverSocket = serverSocket;
+        threadArgs->serverUnicastSocket = serverUnicastSocket;
+        threadArgs->serverBroadcastSocket = serverBroadcastSocket;
         threadArgs->clientAddrLen = sizeof(struct sockaddr_in);
 
-        receiveMessage(serverSocket, threadArgs->buffer, &threadArgs->clientAddrIn, threadArgs->clientAddrLen);
+        receiveMessage(serverUnicastSocket, threadArgs->buffer, &threadArgs->clientAddrIn, threadArgs->clientAddrLen);
         createThreadToHandleReceivedMessage(threads, threadArgs);
     }
     //
@@ -121,19 +123,21 @@ int main(int argc, char *argv[])
     //
     */
 
-    //
-    // UNICAST
-    //
-    createAddress(serverUnicastSocket, port);
-    //    while (1)
-    //    {
-    puts("receiving message");
-    receiveMessageAndRespond(serverUnicastSocket);
-    //    }
-    //
-    //
-    //
-    puts("received and responded");
+    /*
+   //
+   // UNICAST
+   //
+   createAddress(serverUnicastSocket, port);
+   //    while (1)
+   //    {
+   puts("receiving message");
+   receiveMessageAndRespond(serverUnicastSocket);
+   //    }
+   //
+   //
+   //
+   puts("received and responded");
+   */
 
     //
     // BROADCAST

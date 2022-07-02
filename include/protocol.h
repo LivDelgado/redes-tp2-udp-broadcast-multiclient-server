@@ -14,7 +14,7 @@
 #include "utils.h"
 
 
-static const char *BROADCAST_PORT = "51512";
+static char *BROADCAST_PORT = "51512";
 
 int createUdpSocket();
 void setSocketPermissionToBroadcast(int serverSocket);
