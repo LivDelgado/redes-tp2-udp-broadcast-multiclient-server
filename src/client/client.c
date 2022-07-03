@@ -269,9 +269,9 @@ void *sendUnicastThread(void *data)
             }
             else if (strncmp(messageFromTerminal, "request information from", 24) == 0)
             {
-                char destineIdStr[3];
-                memcpy(destineIdStr, &messageFromTerminal[strlen(messageFromTerminal) - 2], 2);
-                destineIdStr[2] = '\0';
+                char destineIdStr[4];
+                memcpy(destineIdStr, &messageFromTerminal[strlen(messageFromTerminal) - 3], 3);
+                destineIdStr[3] = '\0';
 
                 int destineId = atoi(destineIdStr);
                 sendMessageToServer(threadData->clientUnicastSocket, constructMessageWithThreeFields(5, self.equipmentId, destineId), threadData->serverAddress);
